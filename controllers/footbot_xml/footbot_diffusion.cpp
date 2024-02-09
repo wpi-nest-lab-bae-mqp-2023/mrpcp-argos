@@ -157,8 +157,8 @@ void CFootBotDiffusion::Rotate(double x, double y, argos::CRadians yaw){
       angleerr += 2*pi;
     }
 
-    if(abs(angleerr) > 0.03){
-      ideal_speed = std::max(std::min(minimum_speed,kp*angleerr - kd*prevangleerr), maximum_speed);
+    if(abs(angleerr) > 0.02){
+      ideal_speed = std::max(std::min(minimum_speed,abs(kp*angleerr - kd*prevangleerr)), maximum_speed);
       if(angleerr<0){
         m_pcWheels->SetLinearVelocity(ideal_speed, -ideal_speed);
       }
