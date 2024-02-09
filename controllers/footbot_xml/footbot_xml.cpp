@@ -1,5 +1,5 @@
 /* Include the controller definition */
-#include "footbot_diffusion.h"
+#include "footbot_xml.h"
 /* Function definitions for XML parsing */
 #include <argos3/core/utility/configuration/argos_configuration.h>
 /* 2D vector definition */
@@ -12,7 +12,7 @@
 /****************************************/
 /****************************************/
 
-CFootBotDiffusion::CFootBotDiffusion() :
+CFootBotXML::CFootBotXML() :
    m_pcWheels(NULL),
    m_pcProximity(NULL),
    m_cAlpha(10.0f),
@@ -24,7 +24,7 @@ CFootBotDiffusion::CFootBotDiffusion() :
 /****************************************/
 /****************************************/
 
-void CFootBotDiffusion::Init(TConfigurationNode& t_node) {
+void CFootBotXML::Init(TConfigurationNode& t_node) {
    /*
     * Get sensor/actuator handles
     *
@@ -73,7 +73,7 @@ void CFootBotDiffusion::Init(TConfigurationNode& t_node) {
    Reset();
 }
 
-void CFootBotDiffusion::Reset(){
+void CFootBotXML::Reset(){
   pos = m_pcPosSens->GetReading().Position;
   quat = m_pcPosSens->GetReading().Orientation;
 
@@ -103,7 +103,7 @@ void CFootBotDiffusion::Reset(){
 /****************************************/
 /****************************************/
 
-void CFootBotDiffusion::ControlStep() {
+void CFootBotXML::ControlStep() {
    /* Get readings from proximity sensor */
    const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
    /* Sum them together */
@@ -148,7 +148,7 @@ void CFootBotDiffusion::ControlStep() {
 }
 
 //rotates to a set (x, y) position. yaw is the current orientation
-void CFootBotDiffusion::Rotate(double x, double y, argos::CRadians yaw){
+void CFootBotXML::Rotate(double x, double y, argos::CRadians yaw){
     angleerr =  atan2(y, x) - yaw.GetValue();
     while(angleerr >= pi){
       angleerr -= 2*pi;
@@ -174,7 +174,7 @@ void CFootBotDiffusion::Rotate(double x, double y, argos::CRadians yaw){
 }
 
 //drives a certain distance
-void CFootBotDiffusion::Drive(double distance){
+void CFootBotXML::Drive(double distance){
     if(distance > 0.05 || distance < -0.05){
       m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
     }
@@ -184,7 +184,7 @@ void CFootBotDiffusion::Drive(double distance){
     }
 }
 /*
-void CFootBotDiffusion::Rotate(double distance){
+void CFootBotXML::Rotate(double distance){
 
 }
 */
@@ -202,4 +202,4 @@ void CFootBotDiffusion::Rotate(double distance){
  * controller class to instantiate.
  * See also the configuration files for an example of how this is used.
  */
-REGISTER_CONTROLLER(CFootBotDiffusion, "footbot_diffusion_controller")
+REGISTER_CONTROLLER(CFootBotXML, "footbot_xml_controller")

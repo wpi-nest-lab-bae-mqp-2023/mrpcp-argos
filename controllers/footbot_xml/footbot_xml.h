@@ -16,8 +16,8 @@
  *    experiments/diffusion_10.argos
  */
 
-#ifndef FOOTBOT_DIFFUSION_H
-#define FOOTBOT_DIFFUSION_H
+#ifndef FOOTBOT_XML_H
+#define FOOTBOT_XML_H
 
 /*
  * Include some necessary headers.
@@ -47,20 +47,20 @@ using namespace argos;
 /*
  * A controller is simply an implementation of the CCI_Controller class.
  */
-class CFootBotDiffusion : public CCI_Controller {
+class CFootBotXML : public CCI_Controller {
 
 public:
 
    /* Class constructor. */
-   CFootBotDiffusion();
+   CFootBotXML();
 
    /* Class destructor. */
-   virtual ~CFootBotDiffusion() {}
+   virtual ~CFootBotXML() {}
 
    /*
     * This function initializes the controller.
     * The 't_node' variable points to the <parameters> section in the XML
-    * file in the <controllers><footbot_diffusion_controller> section.
+    * file in the <controllers><footbot_XML_controller> section.
     */
    virtual void Init(TConfigurationNode& t_node);
 
@@ -117,7 +117,7 @@ private:
     * The following variables are used as parameters for the
     * algorithm. You can set their value in the <parameters> section
     * of the XML configuration file, under the
-    * <controllers><footbot_diffusion_controller> section.
+    * <controllers><footbot_xml_controller> section.
     */
 
    /* Maximum tolerance for the angle between

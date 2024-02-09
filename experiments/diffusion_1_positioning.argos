@@ -49,8 +49,8 @@
         - library: the path to the compiled library containing you
           controller.
     -->
-    <footbot_diffusion_controller id="fdc"
-                                  library="build/controllers/footbot_diffusion/libfootbot_diffusion">
+    <footbot_xml_controller id="fdc"
+                                  library="build/controllers/footbot_xml/libfootbot_xml">
       <!--
           The <actuators> section contains a list of the actuators used by
           this controller.
@@ -94,7 +94,7 @@
           controllers/footbot_diffusion/footbot_diffusion.h.
       -->
       <params alpha="7.5" delta="0.1" velocity="5" path="-1 -1, -0.5 -1.0, 0.0 -1.0, 0.5 -1.0, 0.5 -0.5, -1.0 -1.0, 0.5 0.0, -1.0 -1.0, -1.0 -1.0, 1.0 0.5, -1.0 -1.0" path_length="11"/>
-    </footbot_diffusion_controller>
+    </footbot_xml_controller>
 
   </controllers>
 
