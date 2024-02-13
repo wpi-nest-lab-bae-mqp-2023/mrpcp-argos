@@ -14,7 +14,7 @@
 
 CFootBotXML::CFootBotXML() :
    m_pcWheels(NULL),
-   m_pcProximity(NULL),
+//   m_pcProximity(NULL),
    m_cAlpha(10.0f),
    m_fDelta(0.5f),
    m_fWheelVelocity(2.5f),
@@ -48,7 +48,7 @@ void CFootBotXML::Init(TConfigurationNode& t_node) {
     * occurs.
     */
    m_pcWheels    = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-   m_pcProximity = GetSensor  <CCI_FootBotProximitySensor      >("footbot_proximity"    );
+//   m_pcProximity = GetSensor  <CCI_FootBotProximitySensor      >("footbot_proximity"    );
 
    m_pcPosSens   = GetSensor  <CCI_PositioningSensor        >("positioning"       );
    /*
@@ -105,13 +105,13 @@ void CFootBotXML::Reset(){
 
 void CFootBotXML::ControlStep() {
    /* Get readings from proximity sensor */
-   const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+//   const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
    /* Sum them together */
-   CVector2 cAccumulator;
-   for(size_t i = 0; i < tProxReads.size(); ++i) {
-      cAccumulator += CVector2(tProxReads[i].Value, tProxReads[i].Angle);
-   }
-   cAccumulator /= tProxReads.size();
+//   CVector2 cAccumulator;
+//   for(size_t i = 0; i < tProxReads.size(); ++i) {
+//      cAccumulator += CVector2(tProxReads[i].Value, tProxReads[i].Angle);
+//   }
+//   cAccumulator /= tProxReads.size();
 
    pos = m_pcPosSens->GetReading().Position;
    quat = m_pcPosSens->GetReading().Orientation;
@@ -136,13 +136,13 @@ void CFootBotXML::ControlStep() {
        if(c==path_length){
          c = 0;
        }
-       LOGERR << "new point:" << path_arr[c][0] << "," << path_arr[c][1] << std::endl;
+         std::cout << "new point:" << path_arr[c][0] << "," << path_arr[c][1] << std::endl;
 
        m_eState = STATE_ROTATING;
        break;
      }
      default: {
-        LOGERR << "We can't be here, there's a bug!" << std::endl;
+         std::cout << "We can't be here, there's a bug!" << std::endl;
      }
   }
 }
