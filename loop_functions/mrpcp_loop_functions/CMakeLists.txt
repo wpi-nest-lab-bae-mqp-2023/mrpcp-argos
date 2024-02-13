@@ -1,4 +1,4 @@
-pkg_check_modules(CURL libcurl REQUIRED)
+find_package(CURL REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 
 set(mrpcp_loop_functions_SOURCES
