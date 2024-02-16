@@ -96,26 +96,23 @@
           controllers/footbot_diffusion/footbot_diffusion.h.
       -->
       <!--  Sim  -->
-<!--      <params alpha="7.5" delta="0.1" velocity="5" />-->
+      <params alpha="7.5" delta="0.1" velocity="5" />
       <!--  Real  -->
-      <params>
-        <wheel_turning hard_turn_angle_threshold="90"
-                       soft_turn_angle_threshold="20"
-                       hard_reset_angle_threshold="60"
-                       no_turn_angle_threshold="10"
-                       max_speed="5" />
-      </params>
+<!--      <params>-->
+<!--        <wheel_turning hard_turn_angle_threshold="90"-->
+<!--                       soft_turn_angle_threshold="20"-->
+<!--                       hard_reset_angle_threshold="60"-->
+<!--                       no_turn_angle_threshold="10"-->
+<!--                       max_speed="5" />-->
+<!--      </params>-->
 
     </footbot_diffusion_controller>
 
   </controllers>
 
-<!--  <loop_functions library="build/loop_functions/mrpcp_loop_functions/libmrpcp_loop_functions"-->
-<!--                  label="mrpcp_loop_functions">-->
-<!--    <cluster   center=" 5,0" robot_num="30" robot_density="0.1"  />-->
-<!--    <scalefree center=" 0,0" robot_num="30" robot_range="1.5"      />-->
-<!--    <line      center="-1,0" robot_num="10" robot_distance="0.3" />-->
-<!--  </loop_functions>-->
+  <loop_functions library="build/loop_functions/mrpcp_loop_functions/libmrpcp_loop_functions"
+                  label="mrpcp_loop_functions">
+  </loop_functions>
 
 
   <!-- *********************** -->
@@ -154,10 +151,10 @@
 
     <!--  Sim  -->
     <!-- Place a foot-bot in the origin and bind it to the controller -->
-<!--    <foot-bot id="fb_0">-->
-<!--      <body position="0,0,0" orientation="0,0,0" />-->
-<!--      <controller config="fdc"/>-->
-<!--    </foot-bot>-->
+    <foot-bot id="fb_0">
+      <body position="0,0,0" orientation="0,0,0" />
+      <controller config="diffusion"/>
+    </foot-bot>
 
   </arena>
 
@@ -177,16 +174,16 @@
     -->
 
     <!--  Sim  -->
-<!--        <dynamics2d id="dyn2d" />-->
+        <dynamics2d id="dyn2d" />
     <!--  Real  -->
-    <tracking>
-      <updaters>
-        <vicon_updater/>
-      </updaters>
-      <assigners>
-        <Khepera default="diffusion"/>
-      </assigners>
-    </tracking>
+<!--    <tracking>-->
+<!--      <updaters>-->
+<!--        <vicon_updater/>-->
+<!--      </updaters>-->
+<!--      <assigners>-->
+<!--        <Khepera default="diffusion"/>-->
+<!--      </assigners>-->
+<!--    </tracking>-->
 
   </physics_engines>
 
@@ -229,9 +226,9 @@
 
 
   <!--  Real -->
-  <loop_functions label="MasterLoopFunctions">
-    <sub_loop_function label="BaseNetworking" />
-  </loop_functions>
+<!--  <loop_functions label="MasterLoopFunctions">-->
+<!--    <sub_loop_function label="BaseNetworking" />-->
+<!--  </loop_functions>-->
 
 
 </argos-configuration>
