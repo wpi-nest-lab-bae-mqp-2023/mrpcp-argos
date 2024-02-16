@@ -26,7 +26,7 @@
     <experiment length="0"
                 ticks_per_second="10"
                 random_seed="124" />
-  </framework>footbot_diffusion
+  </framework>
 
   <!-- *************** -->
   <!-- * Controllers * -->
@@ -106,6 +106,11 @@
 
   </controllers>
 
+<!--  <loop_functions library="build/loop_functions/mrpcp_loop_functions/libmrpcp_loop_functions"-->
+<!--                  label="mrpcp_loop_functions">-->
+<!--  </loop_functions>-->
+
+
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
@@ -143,7 +148,7 @@
     <!-- Place a foot-bot in the origin and bind it to the controller -->
     <foot-bot id="fb_0">
       <body position="0,0,0" orientation="0,0,0" />
-      <controller config="fdc"/>
+      <controller config="diffusion"/>
     </foot-bot>
 
   </arena>
@@ -163,16 +168,16 @@
         Use a 2D dynamics engine.
     -->
     <!--  Sim  -->
-<!--            <dynamics2d id="dyn2d" />-->
+            <dynamics2d id="dyn2d" />
     <!--  Real  -->
-    <tracking>
-      <updaters>
-        <vicon_updater/>
-      </updaters>
-      <assigners>
-        <Khepera default="diffusion"/>
-      </assigners>
-    </tracking>
+<!--    <tracking>-->
+<!--      <updaters>-->
+<!--        <vicon_updater/>-->
+<!--      </updaters>-->
+<!--      <assigners>-->
+<!--        <Khepera default="diffusion"/>-->
+<!--      </assigners>-->
+<!--    </tracking>-->
 
   </physics_engines>
 
@@ -214,9 +219,9 @@
   </visualization>
 
   <!--  Real -->
-  <loop_functions label="MasterLoopFunctions">
-    <sub_loop_function label="BaseNetworking" />
-  </loop_functions>
+<!--  <loop_functions label="MasterLoopFunctions">-->
+<!--    <sub_loop_function label="BaseNetworking" />-->
+<!--  </loop_functions>-->
 
 
 </argos-configuration>

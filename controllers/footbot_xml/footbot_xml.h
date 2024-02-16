@@ -153,7 +153,7 @@ private:
 
    //50 defines the maximum number of allowed nodes in any path, so before running a test would need to change to L/2
    //this is a dumb solution, but i couldn't think of a nice way to get that information before declaring this object
-   double path_arr[50][2]; //set to max # of nodes in possible space L/2
+   std::vector<std::vector<float>> path_arr; //set to max # of nodes in possible space L/2
    int xorycount, countinstr, c, path_length = 0;
    std::string path;
    EState m_eState;

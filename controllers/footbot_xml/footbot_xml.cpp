@@ -7,14 +7,13 @@
 
 #include <argos3/core/utility/logging/argos_log.h>
 
-#include <numbers>
 
 /****************************************/
 /****************************************/
 
 CFootBotXML::CFootBotXML() :
    m_pcWheels(NULL),
-//   m_pcProximity(NULL),
+   m_pcPosSens(NULL),
    m_cAlpha(10.0f),
    m_fDelta(0.5f),
    m_fWheelVelocity(2.5f),
@@ -61,8 +60,6 @@ void CFootBotXML::Init(TConfigurationNode& t_node) {
    //m_cOutput.open("output.txt", std::ios::app);
    //m_cOutput << m_pcPosSens->GetReading().Position;
 
-   GetNodeAttribute(t_node, "path", path);
-   GetNodeAttribute(t_node, "path_length", path_length);
    GetNodeAttributeOrDefault(t_node, "alpha", m_cAlpha, m_cAlpha);
    m_cGoStraightAngleRange.Set(-ToRadians(m_cAlpha), ToRadians(m_cAlpha));
    GetNodeAttributeOrDefault(t_node, "delta", m_fDelta, m_fDelta);
@@ -77,23 +74,8 @@ void CFootBotXML::Reset(){
   pos = m_pcPosSens->GetReading().Position;
   quat = m_pcPosSens->GetReading().Orientation;
 
-  //taking in information from xml about path
-
-  std::stringstream ss(path);
-  std::string pathxandy;
-  char tab2[1024];
-  while(!ss.eof()){
-    getline(ss,pathxandy,',');
-    std::stringstream ws(pathxandy);
-
-    std::string pathpoint;
-    xorycount = 0;
-    while(ws >> pathpoint){
-      path_arr[countinstr][xorycount] = strtod(pathpoint.c_str(), NULL);
-      xorycount += 1;
-    }
-    countinstr += 1;
-  }
+    path_arr.push_back({0., 0.});
+    path_arr.push_back({0.5, 0.5});
 
   m_eState = STATE_ROTATING;
 }
@@ -133,7 +115,7 @@ void CFootBotXML::ControlStep() {
      }
      case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
        c += 1;
-       if(c==path_length){
+       if(c==path_arr.size()){
          c = 0;
        }
          std::cout << "new point:" << path_arr[c][0] << "," << path_arr[c][1] << std::endl;
