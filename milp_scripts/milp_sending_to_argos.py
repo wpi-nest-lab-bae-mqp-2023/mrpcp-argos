@@ -373,7 +373,7 @@ for r in full_robot_paths[0]:
 
 import xml.etree.ElementTree as ET
 
-mytree = ET.parse('diffusion_1_positioning.argos')
+mytree = ET.parse('mqp1.argos')
 myroot = mytree.getroot()
 print(myroot.attrib)
 
@@ -383,5 +383,5 @@ for x in myroot.iter('params'):
   x.set('path', path_string)
   x.set('path_length', str(1+len(full_robot_paths[0])))
 
-mytree.write('diffusion_1_positioning.argos')
+mytree.write('mqp1.argos')
 #(already_covered.add(x) for t in targets_left for x in t)
