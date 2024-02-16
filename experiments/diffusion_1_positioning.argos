@@ -49,8 +49,8 @@
         - library: the path to the compiled library containing you
           controller.
     -->
-    <footbot_xml_controller id="diffusion"
-                                  library="build/controllers/footbot_xml/libfootbot_xml">
+    <footbot_mqp_controller id="diffusion"
+                                  library="build/controllers/footbot_mqp/libfootbot_mqp">
       <!--
           The <actuators> section contains a list of the actuators used by
           this controller.
@@ -102,7 +102,7 @@
                        max_speed="5" />
       </params>
 
-    </footbot_xml_controller>
+    </footbot_mqp_controller>
 
   </controllers>
 

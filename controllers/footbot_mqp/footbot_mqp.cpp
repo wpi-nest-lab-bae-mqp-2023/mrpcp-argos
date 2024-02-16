@@ -1,5 +1,5 @@
 /* Include the controller definition */
-#include "footbot_xml.h"
+#include "footbot_mqp.h"
 /* Function definitions for XML parsing */
 #include <argos3/core/utility/configuration/argos_configuration.h>
 /* 2D vector definition */
@@ -11,7 +11,7 @@
 /****************************************/
 /****************************************/
 
-CFootBotXML::CFootBotXML() :
+CFootBotMQP::CFootBotMQP() :
    m_pcWheels(NULL),
    m_pcPosSens(NULL),
    m_cAlpha(10.0f),
@@ -23,7 +23,7 @@ CFootBotXML::CFootBotXML() :
 /****************************************/
 /****************************************/
 
-void CFootBotXML::Init(TConfigurationNode& t_node) {
+void CFootBotMQP::Init(TConfigurationNode& t_node) {
    /*
     * Get sensor/actuator handles
     *
@@ -70,7 +70,7 @@ void CFootBotXML::Init(TConfigurationNode& t_node) {
    Reset();
 }
 
-void CFootBotXML::Reset(){
+void CFootBotMQP::Reset(){
   pos = m_pcPosSens->GetReading().Position;
   quat = m_pcPosSens->GetReading().Orientation;
 
@@ -85,7 +85,7 @@ void CFootBotXML::Reset(){
 /****************************************/
 /****************************************/
 
-void CFootBotXML::ControlStep() {
+void CFootBotMQP::ControlStep() {
    /* Get readings from proximity sensor */
 //   const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
    /* Sum them together */
@@ -130,7 +130,7 @@ void CFootBotXML::ControlStep() {
 }
 
 //rotates to a set (x, y) position. yaw is the current orientation
-void CFootBotXML::Rotate(double x, double y, argos::CRadians yaw){
+void CFootBotMQP::Rotate(double x, double y, argos::CRadians yaw){
     angleerr =  atan2(y, x) - yaw.GetValue();
     while(angleerr >= pi){
       angleerr -= 2*pi;
@@ -156,7 +156,7 @@ void CFootBotXML::Rotate(double x, double y, argos::CRadians yaw){
 }
 
 //drives a certain distance
-void CFootBotXML::Drive(double distance){
+void CFootBotMQP::Drive(double distance){
     if(distance > 0.05 || distance < -0.05){
       m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
     }
@@ -166,7 +166,7 @@ void CFootBotXML::Drive(double distance){
     }
 }
 /*
-void CFootBotXML::Rotate(double distance){
+void CFootBotMQP::Rotate(double distance){
 
 }
 */
@@ -184,4 +184,4 @@ void CFootBotXML::Rotate(double distance){
  * controller class to instantiate.
  * See also the configuration files for an example of how this is used.
  */
-REGISTER_CONTROLLER(CFootBotXML, "footbot_xml_controller")
+REGISTER_CONTROLLER(CFootBotMQP, "footbot_mqp_controller")
