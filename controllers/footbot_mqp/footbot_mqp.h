@@ -159,6 +159,8 @@ private:
    EState m_eState;
    double pi = 3.1415926;
 
+    static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
+
 };
 
 #endif

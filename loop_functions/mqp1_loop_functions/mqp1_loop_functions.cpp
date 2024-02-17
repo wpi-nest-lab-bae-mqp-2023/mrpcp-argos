@@ -9,6 +9,7 @@
 #include <curl/curl.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <unistd.h>
 
 using json = nlohmann::json;
 
@@ -48,49 +49,52 @@ MQP1LoopFunctions::~MQP1LoopFunctions() {
 void MQP1LoopFunctions::Init(TConfigurationNode& t_tree) {
     std::cout << "Setting up in mqp1_loop_functions.cpp\n" << std::endl;
 
-    try {
-         CURL *curl;
-         CURLcode res;
-         std::string readBuffer;
-
-         curl = curl_easy_init();
-         if(curl) {
-             curl_easy_setopt(curl, CURLOPT_URL, "https://jsonplaceholder.typicode.com/todos/1");
-             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-             res = curl_easy_perform(curl);
-             curl_easy_cleanup(curl);
-
-             std::cout << readBuffer << std::endl;
-             // EXPECTED OUTPUT
-             // {
-             //  "userId": 1,
-             //  "id": 1,
-             //  "title": "delectus aut autem",
-             //  "completed": false
-             //}
-
-             json data = json::parse(readBuffer);
-             data["title"] = "Something else...";
-
-             std::cout << data.dump(4) << std::endl;
-             // EXPECTED OUTPUT
-             // {
-             //  "userId": 1,
-             //  "id": 1,
-             //  "title": "Something else...",
-             //  "completed": false
-             //}
-
-
-         }
-
-   }
-   catch(CARGoSException& ex) {
-      THROW_ARGOSEXCEPTION_NESTED("Error initializing the loop functions", ex);
-   }
+//    try {
+//         CURL *curl;
+//         CURLcode res;
+//         std::string readBuffer;
+//
+//         curl = curl_easy_init();
+//         if(curl) {
+//             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+//             curl_easy_setopt(curl, CURLOPT_URL, "http://127.0.0.1:5000/solve?n_a=3&k=5&q_k=0.65&rp=1&l=1&mode=m&d=3");
+//             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+//             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+//             res = curl_easy_perform(curl);
+//             curl_easy_cleanup(curl);
+//
+//             std::cout << readBuffer << std::endl;
+//             // EXPECTED OUTPUT
+//             // {
+//             //  "userId": 1,
+//             //  "id": 1,
+//             //  "title": "delectus aut autem",
+//             //  "completed": false
+//             //}
+//
+//             json data = json::parse(readBuffer);
+////             data["title"] = "Something else...";
+////
+//             std::cout << data["robot_world_path"].dump() << std::endl;
+//             // EXPECTED OUTPUT
+//             // {
+//             //  "userId": 1,
+//             //  "id": 1,
+//             //  "title": "Something else...",
+//             //  "completed": false
+//             //}
+//
+//
+//         }
+//
+//   }
+//   catch(CARGoSException& ex) {
+//      THROW_ARGOSEXCEPTION_NESTED("Error initializing the loop functions", ex);
+//   }
 
     std::cout << "Ran init in mqp1_loop_functions.cpp\n" << std::endl;
+//    usleep(100000000);
+
 }
 
 

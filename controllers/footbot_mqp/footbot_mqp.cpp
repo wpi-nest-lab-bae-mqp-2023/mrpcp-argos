@@ -7,6 +7,22 @@
 
 #include <argos3/core/utility/logging/argos_log.h>
 
+#include <sstream>
+#include <list>
+#include <curl/curl.h>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <unistd.h>
+
+using json = nlohmann::json;
+
+
+size_t CFootBotMQP::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+{
+    ((std::string*)userp)->append((char*)contents, size * nmemb);
+    return size * nmemb;
+}
+
 
 /****************************************/
 /****************************************/
@@ -49,7 +65,7 @@ void CFootBotMQP::Init(TConfigurationNode& t_node) {
    m_pcWheels    = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
 //   m_pcProximity = GetSensor  <CCI_FootBotProximitySensor      >("footbot_proximity"    );
 
-   m_pcPosSens   = GetSensor  <CCI_PositioningSensor        >("positioning"       );
+   m_pcPosSens   = GetSensor  <CCI_PositioningSensor        >("positioning");
    /*
     * Parse the configuration file
     *
@@ -74,8 +90,58 @@ void CFootBotMQP::Reset(){
   pos = m_pcPosSens->GetReading().Position;
   quat = m_pcPosSens->GetReading().Orientation;
 
-    path_arr.push_back({0., 0.});
-    path_arr.push_back({0.5, 0.5});
+    std::cout << "Setting up in footbot_mqp1.cpp\n" << std::endl;
+
+    try {
+        CURL *curl;
+        CURLcode res;
+        std::string readBuffer;
+
+        curl = curl_easy_init();
+        if(curl) {
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
+            curl_easy_setopt(curl, CURLOPT_URL, "http://192.168.1.120:5000/solve?n_a=3&k=5&q_k=0.65&rp=1&l=1&mode=m&d=3");
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+            res = curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
+
+            std::cout << readBuffer << std::endl;
+            // EXPECTED OUTPUT
+            // {
+            //  "userId": 1,
+            //  "id": 1,
+            //  "title": "delectus aut autem",
+            //  "completed": false
+            //}
+
+            json data = json::parse(readBuffer);
+//             data["title"] = "Something else...";
+//
+            std::cout << data["robot_world_path"].dump() << std::endl;
+            // EXPECTED OUTPUT
+            // {
+            //  "userId": 1,
+            //  "id": 1,
+            //  "title": "Something else...",
+            //  "completed": false
+            //}
+
+            path_arr = data["robot_world_path"][0].get<std::vector<std::vector<float>>>();
+
+        }
+
+    }
+    catch(CARGoSException& ex) {
+        THROW_ARGOSEXCEPTION_NESTED("Error initializing the loop functions", ex);
+    }
+
+    std::cout << "Ran init in footbot_mqp1.cpp\n" << std::endl;
+//    usleep(100000000);
+
+
+//    path_arr.push_back({0., 0.});
+//    path_arr.push_back({0.5, 0.5});
 
   m_eState = STATE_ROTATING;
 }
