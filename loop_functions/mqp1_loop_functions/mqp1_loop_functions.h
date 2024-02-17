@@ -6,12 +6,12 @@
 
 using namespace argos;
 
-class MRPCPLoopFunctions : public CLoopFunctions {
+class MQP1LoopFunctions : public CLoopFunctions {
 
 public:
 
-   MRPCPLoopFunctions();
-   virtual ~MRPCPLoopFunctions();
+   MQP1LoopFunctions();
+   virtual ~MQP1LoopFunctions();
 
    virtual void Init(TConfigurationNode& t_tree);
    static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);

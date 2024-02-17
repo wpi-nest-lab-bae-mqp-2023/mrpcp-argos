@@ -106,9 +106,9 @@
 
   </controllers>
 
-<!--  <loop_functions library="build/loop_functions/mrpcp_loop_functions/libmrpcp_loop_functions"-->
-<!--                  label="mrpcp_loop_functions">-->
-<!--  </loop_functions>-->
+  <loop_functions library="build/loop_functions/mqp1_loop_functions/libmqp1_loop_functions"
+                  label="mqp1_loop_functions">
+  </loop_functions>
 
 
   <!-- *********************** -->

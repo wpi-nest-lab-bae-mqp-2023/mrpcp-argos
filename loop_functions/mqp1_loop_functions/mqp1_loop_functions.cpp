@@ -1,4 +1,4 @@
-#include "mrpcp_loop_functions.h"
+#include "mqp1_loop_functions.h"
 
 #include <argos3/plugins/simulator/entities/box_entity.h>
 #include <argos3/plugins/simulator/entities/cylinder_entity.h>
@@ -13,7 +13,7 @@
 using json = nlohmann::json;
 
 
-size_t MRPCPLoopFunctions::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+size_t MQP1LoopFunctions::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
  {
      ((std::string*)userp)->append((char*)contents, size * nmemb);
      return size * nmemb;
@@ -33,20 +33,20 @@ static const UInt32      MAX_ROBOT_TRIALS = 20;
 /****************************************/
 /****************************************/
 
-MRPCPLoopFunctions::MRPCPLoopFunctions() {
+MQP1LoopFunctions::MQP1LoopFunctions() {
 }
 
 /****************************************/
 /****************************************/
 
-MRPCPLoopFunctions::~MRPCPLoopFunctions() {
+MQP1LoopFunctions::~MQP1LoopFunctions() {
 }
 
 /****************************************/
 /****************************************/
 
-void MRPCPLoopFunctions::Init(TConfigurationNode& t_tree) {
-    std::cout << "Setting up in mrpcp_loop_functions.cpp\n" << std::endl;
+void MQP1LoopFunctions::Init(TConfigurationNode& t_tree) {
+    std::cout << "Setting up in mqp1_loop_functions.cpp\n" << std::endl;
 
     try {
          CURL *curl;
@@ -90,11 +90,11 @@ void MRPCPLoopFunctions::Init(TConfigurationNode& t_tree) {
       THROW_ARGOSEXCEPTION_NESTED("Error initializing the loop functions", ex);
    }
 
-    std::cout << "Ran init in mrpcp_loop_functions.cpp\n" << std::endl;
+    std::cout << "Ran init in mqp1_loop_functions.cpp\n" << std::endl;
 }
 
 
 /****************************************/
 /****************************************/
 
-REGISTER_LOOP_FUNCTIONS(MRPCPLoopFunctions, "mrpcp_loop_functions");
+REGISTER_LOOP_FUNCTIONS(MQP1LoopFunctions, "mqp1_loop_functions");
