@@ -110,11 +110,6 @@
 
   </controllers>
 
-  <loop_functions library="build/loop_functions/mrpcp_loop_functions/libmrpcp_loop_functions"
-                  label="mrpcp_loop_functions">
-  </loop_functions>
-
-
   <!-- *********************** -->
   <!-- * Arena configuration * -->
   <!-- *********************** -->
