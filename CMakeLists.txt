@@ -39,6 +39,9 @@ link_libraries(${ARGOS_LDFLAGS})
 #  include_directories(${GALIB_INCLUDE_DIRS})
 #endif(GALIB_FOUND)
 
+set(CMAKE_TOOLCHAIN_FILE cget/cget/cget.cmake)
+set(CMAKE_PREFIX_PATH cget)
+
 # Descend into the controllers directory
 add_subdirectory(controllers)
 
