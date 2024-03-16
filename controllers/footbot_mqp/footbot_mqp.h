@@ -151,13 +151,12 @@ private:
 
    double angleerr, prevangleerr = 0;
 
-   std::vector<std::vector<float>> path_arr; //set to max # of nodes in possible space L/2
+   std::vector<std::vector<std::vector<float>>> path_arr; //set to max # of nodes in possible space L/2
    int c = 0;
    std::string path;
    EState m_eState;
    double pi = 3.1415926;
 
-    static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
 
 };
 

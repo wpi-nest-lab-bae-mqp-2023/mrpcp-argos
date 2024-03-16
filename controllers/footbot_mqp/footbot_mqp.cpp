@@ -9,19 +9,11 @@
 
 #include <sstream>
 #include <list>
-#include <curl/curl.h>
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include <unistd.h>
 
-using json = nlohmann::json;
+#include "mqp_http_client.h"
 
-
-size_t CFootBotMQP::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
-{
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
-}
 
 
 /****************************************/
@@ -83,62 +75,16 @@ void CFootBotMQP::Init(TConfigurationNode& t_node) {
    GetNodeAttributeOrDefault(t_node, "delta", m_fDelta, m_fDelta);
    GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);
 
+   mqp_http_client::solve(&path_arr, "http://127.0.0.1:5000");
+
    Reset();
 }
 
 void CFootBotMQP::Reset(){
-  pos = m_pcPosSens->GetReading().Position;
-  quat = m_pcPosSens->GetReading().Orientation;
+//  pos = m_pcPosSens->GetReading().Position;
+//  quat = m_pcPosSens->GetReading().Orientation;
 
-    std::cout << "Setting up in footbot_mqp1.cpp\n" << std::endl;
-
-    try {
-        CURL *curl;
-        CURLcode res;
-        std::string readBuffer;
-
-        curl = curl_easy_init();
-        if(curl) {
-            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "");
-            curl_easy_setopt(curl, CURLOPT_URL, "http://192.168.1.120:5000/solve?n_a=3&k=5&q_k=0.65&rp=1&l=1&mode=m&d=3");
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-            res = curl_easy_perform(curl);
-            curl_easy_cleanup(curl);
-
-            std::cout << readBuffer << std::endl;
-            // EXPECTED OUTPUT
-            // {
-            //  "userId": 1,
-            //  "id": 1,
-            //  "title": "delectus aut autem",
-            //  "completed": false
-            //}
-
-            json data = json::parse(readBuffer);
-//             data["title"] = "Something else...";
-//
-            std::cout << data["robot_world_path"].dump() << std::endl;
-            // EXPECTED OUTPUT
-            // {
-            //  "userId": 1,
-            //  "id": 1,
-            //  "title": "Something else...",
-            //  "completed": false
-            //}
-
-            path_arr = data["robot_world_path"][0].get<std::vector<std::vector<float>>>();
-
-        }
-
-    }
-    catch(CARGoSException& ex) {
-        THROW_ARGOSEXCEPTION_NESTED("Error initializing the loop functions", ex);
-    }
-
-    std::cout << "Ran init in footbot_mqp1.cpp\n" << std::endl;
 //    usleep(100000000);
-
 
 //    path_arr.push_back({0., 0.});
 //    path_arr.push_back({0.5, 0.5});
@@ -167,24 +113,27 @@ void CFootBotMQP::ControlStep() {
    /* If the angle of the vecUInt32tor is small enough and the closest obstacle
     * is far enough, continue going straight, otherwise curve a little
     */
+    if(path_arr.empty()){
+        return;
+    }
 
-   switch(m_eState) {
+    switch(m_eState) {
      case STATE_ROTATING: {
        quat.ToEulerAngles(yaw, temp1, temp2);
-       Rotate(path_arr[c][0]-pos[0], path_arr[c][1]-pos[1], yaw);
+       Rotate(path_arr[0][c][0]-pos[0], path_arr[0][c][1]-pos[1], yaw);
        break;
      }
      case STATE_DRIVE: {
-       double dist = sqrt(pow(path_arr[c][0]-pos[0],2)+pow(path_arr[c][1]-pos[1],2));
+       double dist = sqrt(pow(path_arr[0][c][0]-pos[0],2)+pow(path_arr[0][c][1]-pos[1],2));
        Drive(dist);
        break;
      }
      case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
        c += 1;
-       if(c==path_arr.size()){
+       if(c==path_arr[0].size()){
          c = 0;
        }
-         std::cout << "new point:" << path_arr[c][0] << "," << path_arr[c][1] << std::endl;
+         std::cout << "new point:" << path_arr[0][c][0] << "," << path_arr[0][c][1] << std::endl;
 
        m_eState = STATE_ROTATING;
        break;
