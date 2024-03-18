@@ -41,7 +41,7 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<floa
 
 
 //    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
-    std::string req_url = fmt::format("{}/solve?n_a=5&k=5&q_k=0.65&rp=2&l=1.5&mode=h1&d=3", host);
+    std::string req_url = fmt::format("{}/solve?n_a=5&k=5&q_k=0.65&rp=2&l=1.5&mode=h1&d=2.5", host);
 
     json data;
     mqp_packets::res mqp_res;
