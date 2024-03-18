@@ -5,19 +5,9 @@
 /* 2D vector definition */
 #include <argos3/core/utility/math/vector2.h>
 
-#include <argos3/core/utility/logging/argos_log.h>
-
 #include <sstream>
 #include <list>
-#include <fstream>
-#include <unistd.h>
 
-//#include "loop_functions/get_initial_solution_mqp/mqp_http_client.h"
-
-
-
-/****************************************/
-/****************************************/
 
 CFootBotMQP::CFootBotMQP() :
    m_pcWheels(NULL),
