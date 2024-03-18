@@ -8,7 +8,6 @@
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
 
 #include "loop_functions/get_initial_solution_mqp/mqp_http_client.h"
-#include "loop_functions/get_initial_solution_mqp/trajectory_qtuser_functions.h"
 
 using namespace argos;
 
@@ -17,9 +16,13 @@ class GetInitialSolutionMQP : public CLoopFunctions {
 public:
 
     GetInitialSolutionMQP();
-   virtual ~GetInitialSolutionMQP();
+    virtual ~GetInitialSolutionMQP();
 
-   virtual void Init(TConfigurationNode& t_tree);
+    virtual void Init(TConfigurationNode& t_tree);
+
+    [[nodiscard]] inline const std::vector<std::vector<std::vector<std::vector<float>>>>& GetPath() const {
+        return path_arr;
+    }
 
 private:
     std::vector<std::vector<std::vector<std::vector<float>>>> path_arr;
