@@ -25,13 +25,13 @@
         <positioning implementation="default" />
       </sensors>
 
-<!--                  "k": k,
-            "q_k": q_k,
-            "n_a": n_a,
-            "rp": rp,
-            "l": l,
-            "d": d,
-            "mode": mode,
+<!--                   "k": k,
+                       "q_k": q_k,
+                       "n_a": n_a,
+                       "rp": rp,
+                       "l": l,
+                       "d": d,
+                       "mode": mode,
 -->
       <params>
         <problem_params k="1"
@@ -67,6 +67,11 @@
     <!-- Place a foot-bot in the origin and bind it to the controller -->
     <foot-bot id="fb_0">
       <body position="0,0,0" orientation="0,0,0" />
+      <controller config="diffusion"/>
+    </foot-bot>
+
+    <foot-bot id="fb_1">
+      <body position="0,0.5,0" orientation="0,0,0" />
       <controller config="diffusion"/>
     </foot-bot>
 
@@ -109,6 +114,9 @@
   </visualization>
 
   <!--  Real -->
+  <loop_functions library="build/loop_functions/get_initial_solution_mqp/libget_initial_solution_mqp"
+          label="get_initial_solution_mqp">
+  </loop_functions>
 <!--  <loop_functions label="MasterLoopFunctions">-->
 <!--    <sub_loop_function label="BaseNetworking" />-->
 <!--  </loop_functions>-->

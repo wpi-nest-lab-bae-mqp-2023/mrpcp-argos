@@ -12,7 +12,7 @@
 #include <fstream>
 #include <unistd.h>
 
-#include "mqp_http_client.h"
+//#include "loop_functions/get_initial_solution_mqp/mqp_http_client.h"
 
 
 
@@ -74,8 +74,6 @@ void CFootBotMQP::Init(TConfigurationNode& t_node) {
    GetNodeAttributeOrDefault(t_node, "delta", m_fDelta, m_fDelta);
    GetNodeAttributeOrDefault(t_node, "delta", m_fDelta, m_fDelta);
    GetNodeAttributeOrDefault(t_node, "velocity", m_fWheelVelocity, m_fWheelVelocity);
-
-   mqp_http_client::solve(&path_arr, "http://127.0.0.1:5000");
 
    Reset();
 }

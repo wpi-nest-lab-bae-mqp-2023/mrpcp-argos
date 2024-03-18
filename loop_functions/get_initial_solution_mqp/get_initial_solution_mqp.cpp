@@ -1,4 +1,4 @@
-#include "mqp1_loop_functions.h"
+#include "get_initial_solution_mqp.h"
 
 #include <argos3/plugins/simulator/entities/box_entity.h>
 #include <argos3/plugins/simulator/entities/cylinder_entity.h>
@@ -10,11 +10,19 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <unistd.h>
+#include <sstream>
+#include <list>
+#include <fstream>
+#include <unistd.h>
+
+#include "loop_functions/get_initial_solution_mqp/mqp_http_client.h"
+
+
 
 using json = nlohmann::json;
 
 
-size_t MQP1LoopFunctions::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
+size_t GetInitialSolutionMQP::WriteCallback(void *contents, size_t size, size_t nmemb, void *userp)
  {
      ((std::string*)userp)->append((char*)contents, size * nmemb);
      return size * nmemb;
@@ -34,20 +42,22 @@ static const UInt32      MAX_ROBOT_TRIALS = 20;
 /****************************************/
 /****************************************/
 
-MQP1LoopFunctions::MQP1LoopFunctions() {
+GetInitialSolutionMQP::GetInitialSolutionMQP() {
 }
 
 /****************************************/
 /****************************************/
 
-MQP1LoopFunctions::~MQP1LoopFunctions() {
+GetInitialSolutionMQP::~GetInitialSolutionMQP() {
 }
 
 /****************************************/
 /****************************************/
 
-void MQP1LoopFunctions::Init(TConfigurationNode& t_tree) {
-    std::cout << "Setting up in mqp1_loop_functions.cpp\n" << std::endl;
+void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
+    std::cout << "Setting up in get_initial_solution_mqp.cpp\n" << std::endl;
+
+    mqp_http_client::solve(&path_arr, "http://127.0.0.1:5000");
 
 //    try {
 //         CURL *curl;
@@ -92,7 +102,7 @@ void MQP1LoopFunctions::Init(TConfigurationNode& t_tree) {
 //      THROW_ARGOSEXCEPTION_NESTED("Error initializing the loop functions", ex);
 //   }
 
-    std::cout << "Ran init in mqp1_loop_functions.cpp\n" << std::endl;
+    std::cout << "Ran init in get_initial_solution_mqp.cpp\n" << std::endl;
 //    usleep(100000000);
 
 }
@@ -101,4 +111,4 @@ void MQP1LoopFunctions::Init(TConfigurationNode& t_tree) {
 /****************************************/
 /****************************************/
 
-REGISTER_LOOP_FUNCTIONS(MQP1LoopFunctions, "mqp1_loop_functions");
+REGISTER_LOOP_FUNCTIONS(GetInitialSolutionMQP, "get_initial_solution_mqp");

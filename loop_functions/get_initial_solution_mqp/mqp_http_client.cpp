@@ -40,7 +40,7 @@ bool mqp_http_client::make_http_req(nlohmann::json *data, const std::string& req
 bool mqp_http_client::solve(std::vector<std::vector<std::vector<float>>> *path_arr, std::string host) {
 
 
-    std::cout << "Setting up in footbot_mqp1.cpp\n" << std::endl;
+    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
     std::string req_url = fmt::format("{}/solve?n_a=5&k=5&q_k=0.65&rp=2&l=1.5&mode=h1&d=3", host);
 
     json data;
@@ -55,6 +55,6 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<float>>> *path_a
 
     *path_arr = data["robot_world_path"][0].get<std::vector<std::vector<std::vector<float>>>>();
 
-    std::cout << "Ran init in footbot_mqp1.cpp\n" << std::endl;
+    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
     return true;
 }
