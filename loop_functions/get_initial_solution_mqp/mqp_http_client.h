@@ -19,7 +19,9 @@ namespace mqp_packets {
 
 class mqp_http_client {
 public:
-    static bool solve(std::vector<std::vector<std::vector<float>>> *path_arr, std::string host);
+    static bool solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr, std::string host);
+    static void printPath(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr);
+
 private:
     static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
     static bool make_http_req(nlohmann::json *data, const std::string& url);

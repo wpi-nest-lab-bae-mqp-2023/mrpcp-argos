@@ -2,7 +2,13 @@
  * This example shows how to define custom distributions to place the robots.
  */
 
+
 #include <argos3/core/simulator/loop_functions.h>
+#include <argos3/plugins/simulator/visualizations/qt-opengl/qtopengl_user_functions.h>
+#include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
+
+#include "loop_functions/get_initial_solution_mqp/mqp_http_client.h"
+#include "loop_functions/get_initial_solution_mqp/trajectory_qtuser_functions.h"
 
 using namespace argos;
 
@@ -14,10 +20,9 @@ public:
    virtual ~GetInitialSolutionMQP();
 
    virtual void Init(TConfigurationNode& t_tree);
-   static size_t WriteCallback(void *contents, size_t size, size_t nmemb, void *userp);
 
 private:
-    std::vector<std::vector<std::vector<float>>> path_arr; //set to max # of nodes in possible space L/2
+    std::vector<std::vector<std::vector<std::vector<float>>>> path_arr;
 
 };
 

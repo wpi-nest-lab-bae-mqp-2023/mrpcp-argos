@@ -105,6 +105,9 @@
   <!-- ****************** -->
   <visualization>
     <qt-opengl>
+      <user_functions library="build/loop_functions/get_initial_solution_mqp/libget_initial_solution_mqp"
+                      label="trajectory_qtuser_functions" />
+
       <camera>
         <placements>
           <placement index="0" position="0,0,8.14689" look_at="0,0,0" up="1,0,0" lens_focal_length="65" />

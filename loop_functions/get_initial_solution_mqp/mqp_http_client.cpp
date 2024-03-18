@@ -1,7 +1,7 @@
 #include "mqp_http_client.h"
 
 #include <iostream>
-#include<unistd.h>               // for linux
+#include <unistd.h>               // for linux
 #include <fmt/core.h>
 
 
@@ -30,17 +30,17 @@ bool mqp_http_client::make_http_req(nlohmann::json *data, const std::string& req
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
 
-    std::cout << readBuffer << std::endl;
+//    std::cout << readBuffer << std::endl;
     *data = json::parse(readBuffer);
 
     return true;
 }
 
 
-bool mqp_http_client::solve(std::vector<std::vector<std::vector<float>>> *path_arr, std::string host) {
+bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr, std::string host) {
 
 
-    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
+//    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
     std::string req_url = fmt::format("{}/solve?n_a=5&k=5&q_k=0.65&rp=2&l=1.5&mode=h1&d=3", host);
 
     json data;
@@ -51,10 +51,22 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<float>>> *path_a
         usleep(1000000);
     }
 
-    std::cout << data["robot_world_path"].dump()<< std::endl;
+    *path_arr = data["robot_world_path"].get<std::vector<std::vector<std::vector<std::vector<float>>>>>();
 
-    *path_arr = data["robot_world_path"][0].get<std::vector<std::vector<std::vector<float>>>>();
-
-    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
+//    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
     return true;
 }
+
+void mqp_http_client::printPath(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr) {
+    for (int ki = 0; ki < path_arr.size(); ++ki) {
+        std::cout << "Robot #" << ki << std::endl;
+        for (int subtouri = 0; subtouri < path_arr[ki].size(); ++subtouri) {
+            std::cout << "\tSubtour #" << subtouri << std::endl;
+            for (int pointi = 0; pointi < path_arr[ki][subtouri].size(); ++pointi) {
+                std::cout << "\t\tPoint: [" << path_arr[ki][subtouri][pointi][0] << ", " << path_arr[ki][subtouri][pointi][1] << "]" << std::endl;
+            }
+        }
+    }
+}
+
+
