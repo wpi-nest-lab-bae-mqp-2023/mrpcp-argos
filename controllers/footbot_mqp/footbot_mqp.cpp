@@ -7,6 +7,7 @@
 
 #include <sstream>
 #include <list>
+#include <utility>
 
 
 CFootBotMQP::CFootBotMQP() :
@@ -20,6 +21,11 @@ CFootBotMQP::CFootBotMQP() :
 
 /****************************************/
 /****************************************/
+void CFootBotMQP::SetPath(std::vector<std::vector<std::vector<float>>> path_arrki) {
+    path_arr = std::move(path_arrki);
+    Reset();
+}
+
 
 void CFootBotMQP::Init(TConfigurationNode& t_node) {
    /*
@@ -69,15 +75,15 @@ void CFootBotMQP::Init(TConfigurationNode& t_node) {
 }
 
 void CFootBotMQP::Reset(){
-//  pos = m_pcPosSens->GetReading().Position;
-//  quat = m_pcPosSens->GetReading().Orientation;
 
-//    usleep(100000000);
+    for (int subtouri = 0; subtouri < path_arr.size(); ++subtouri) {
+        std::cout << "\tSubtour #" << subtouri << std::endl;
+        for (int pointi = 0; pointi < path_arr[subtouri].size(); ++pointi) {
+            std::cout << "\t\tPoint: [" << path_arr[subtouri][pointi][0] << ", " << path_arr[subtouri][pointi][1] << "]" << std::endl;
+        }
+    }
 
-//    path_arr.push_back({0., 0.});
-//    path_arr.push_back({0.5, 0.5});
-
-  m_eState = STATE_ROTATING;
+    m_eState = STATE_ROTATING;
 }
 
 
@@ -108,20 +114,21 @@ void CFootBotMQP::ControlStep() {
     switch(m_eState) {
      case STATE_ROTATING: {
        quat.ToEulerAngles(yaw, temp1, temp2);
-       Rotate(path_arr[0][c][0]-pos[0], path_arr[0][c][1]-pos[1], yaw);
+       Rotate(path_arr[subtour_idc][c][0]-pos[0], path_arr[subtour_idc][c][1]-pos[1], yaw);
        break;
      }
      case STATE_DRIVE: {
-       double dist = sqrt(pow(path_arr[0][c][0]-pos[0],2)+pow(path_arr[0][c][1]-pos[1],2));
+       double dist = sqrt(pow(path_arr[subtour_idc][c][0]-pos[0],2)+pow(path_arr[subtour_idc][c][1]-pos[1],2));
        Drive(dist);
        break;
      }
      case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
        c += 1;
-       if(c==path_arr[0].size()){
+       if(c==path_arr[subtour_idc].size()){
          c = 0;
+         subtour_idc += 1;
        }
-         std::cout << "new point:" << path_arr[0][c][0] << "," << path_arr[0][c][1] << std::endl;
+         std::cout << "new point:" << path_arr[subtour_idc][c][0] << "," << path_arr[subtour_idc][c][1] << std::endl;
 
        m_eState = STATE_ROTATING;
        break;

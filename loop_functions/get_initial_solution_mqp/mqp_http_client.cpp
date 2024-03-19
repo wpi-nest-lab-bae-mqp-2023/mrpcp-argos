@@ -57,14 +57,19 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<floa
     return true;
 }
 
-void mqp_http_client::printPath(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr) {
+void mqp_http_client::printPaths(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr) {
     for (int ki = 0; ki < path_arr.size(); ++ki) {
         std::cout << "Robot #" << ki << std::endl;
-        for (int subtouri = 0; subtouri < path_arr[ki].size(); ++subtouri) {
-            std::cout << "\tSubtour #" << subtouri << std::endl;
-            for (int pointi = 0; pointi < path_arr[ki][subtouri].size(); ++pointi) {
-                std::cout << "\t\tPoint: [" << path_arr[ki][subtouri][pointi][0] << ", " << path_arr[ki][subtouri][pointi][1] << "]" << std::endl;
-            }
+        mqp_http_client::printPath(path_arr[ki]);
+    }
+}
+
+
+void mqp_http_client::printPath(std::vector<std::vector<std::vector<float>>> path_arr) {
+    for (int subtouri = 0; subtouri < path_arr.size(); ++subtouri) {
+        std::cout << "\tSubtour #" << subtouri << std::endl;
+        for (int pointi = 0; pointi < path_arr[subtouri].size(); ++pointi) {
+            std::cout << "\t\tPoint: [" << path_arr[subtouri][pointi][0] << ", " << path_arr[subtouri][pointi][1] << "]" << std::endl;
         }
     }
 }

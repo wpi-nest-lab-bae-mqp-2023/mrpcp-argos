@@ -92,6 +92,9 @@ public:
 
    virtual void Drive(double distance);
 
+    std::vector<std::vector<std::vector<float>>> path_arr;
+    virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
+
 private:
   /* The three possible states in which the controller can be */
   enum EState {
@@ -151,8 +154,8 @@ private:
 
    double angleerr, prevangleerr = 0;
 
-   std::vector<std::vector<std::vector<float>>> path_arr; //set to max # of nodes in possible space L/2
    int c = 0;
+   int subtour_idc = 0;
    std::string path;
    EState m_eState;
    double pi = 3.1415926;
