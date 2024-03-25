@@ -8,6 +8,7 @@
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
 
 #include "loop_functions/get_initial_solution_mqp/mqp_http_client.h"
+#include <argos3/core/utility/configuration/argos_configuration.h>
 
 using namespace argos;
 

@@ -25,10 +25,33 @@ GetInitialSolutionMQP::~GetInitialSolutionMQP() {
 
 void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
     std::cout << "Setting up in get_initial_solution_mqp.cpp" << std::endl;
-    mqp_http_client::solve(&path_arr, "http://127.0.0.1:5000");
+
+    std::string host; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
+    int k = 0; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
+    if (k <= 0) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (k<=0): Select k > 0."); }
+    float nk = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "nk", nk, nk);
+    if (nk <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (nk<=0): Select nk > 0."); }
+    float fcr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
+    if (fcr <= 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fcr<=1): Select fcr > 1."); }
+    float fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
+    if (fr < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr<0): Select fr >= 0."); }
+    float ssd = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
+    if (ssd <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (ssd<=0): Select ssd > 0."); }
+    std::string mode; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
+    if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
+
+    std::cout << "Problem Specification Parameters:" << std::endl;
+    std::cout << "\thost (problem solver server host): " << host << std::endl;
+    std::cout << "\tk (number of robots): " << k << std::endl;
+    std::cout << "\tnk (number of nodes in an axis per robot): " << nk << std::endl;
+    std::cout << "\tfcr (fuel-capacity-ratio relative to minimum needed): " << fcr << std::endl;
+    std::cout << "\tfr (failure-ratio relative ...): " << fr << std::endl;
+    std::cout << "\tssd (square-side-distance in meters): " << ssd << std::endl;
+    std::cout << "Waiting on a solution..." << std::endl;
+
+    mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, mode);
 //    mqp_http_client::printPaths(path_arr);
 
-    /* Check whether a robot is on a food item */
     CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
 
     unsigned int ki = 0;

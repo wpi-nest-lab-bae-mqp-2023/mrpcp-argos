@@ -19,7 +19,14 @@ namespace mqp_packets {
 
 class mqp_http_client {
 public:
-    static bool solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr, std::string host);
+    static bool solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr,
+                      std::string host,
+                      int k,
+                      float nk,
+                      float fcr,
+                      float fr,
+                      float ssd,
+                      std::string mode);
     static void printPaths(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr);
     static void printPath(std::vector<std::vector<std::vector<float>>> path_arr);
 
