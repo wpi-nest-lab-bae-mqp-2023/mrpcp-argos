@@ -1,8 +1,8 @@
 #include "get_initial_solution_mqp.h"
 
 #include <argos3/plugins/simulator/entities/box_entity.h>
-#include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
-#include <controllers/footbot_mqp/footbot_mqp.h>
+#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
+#include <controllers/kheperaiv_mqp/kheperaiv_mqp.h>
 
 #include <sstream>
 #include <list>
@@ -52,15 +52,14 @@ void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, mode);
 //    mqp_http_client::printPaths(path_arr);
 
-    CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
+    CSpace::TMapPerType& m_ckheperaivs = GetSpace().GetEntitiesByType("kheperaiv");
 
     unsigned int ki = 0;
-    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
-        it != m_cFootbots.end();
+    for(CSpace::TMapPerType::iterator it = m_ckheperaivs.begin();
+        it != m_ckheperaivs.end();
         ++it) {
-        /* Get handle to foot-bot entity and controller */
-        CFootBotEntity &cFootBot = *any_cast<CFootBotEntity *>(it->second);
-        CFootBotMQP &cController = dynamic_cast<CFootBotMQP &>(cFootBot.GetControllableEntity().GetController());
+        CKheperaIVEntity &cKheperaIV = *any_cast<CKheperaIVEntity *>(it->second);
+        CKheperaIVMQP &cController = dynamic_cast<CKheperaIVMQP &>(cKheperaIV.GetControllableEntity().GetController());
 
         std::cout << "Robot id: " << ki << std::endl;
         cController.path_arr = path_arr[ki];

@@ -13,20 +13,20 @@
   <!-- *************** -->
   <controllers>
 
-    <footbot_mqp_controller id="diffusion"
-                                  library="build/controllers/footbot_mqp/libfootbot_mqp">
+    <kheperaiv_mqp_controller id="diffusion"
+                                  library="build/controllers/kheperaiv_mqp/libkheperaiv_mqp">
 
       <actuators>
         <differential_steering implementation="default" />
       </actuators>
 
       <sensors>
-        <footbot_proximity implementation="default" show_rays="true" />
+        <kheperaiv_proximity implementation="default" show_rays="true" />
         <positioning implementation="default" />
       </sensors>
     <params/>
 
-    </footbot_mqp_controller>
+    </kheperaiv_mqp_controller>
 
   </controllers>
 
@@ -47,16 +47,16 @@
       <body position="-1.5,0,0" orientation="0,0,0" />
     </box>
 
-    <!-- Place a foot-bot in the origin and bind it to the controller -->
-    <foot-bot id="fb_0">
+    <!-- Place a kheperaiv in the origin and bind it to the controller -->
+    <kheperaiv id="fb_0">
       <body position="-1.25,-1.25,0" orientation="0,0,0" />
       <controller config="diffusion"/>
-    </foot-bot>
+    </kheperaiv>
 
-    <foot-bot id="fb_1">
+    <kheperaiv id="fb_1">
       <body position="-1.25,-1,0" orientation="0,0,0" />
       <controller config="diffusion"/>
-    </foot-bot>
+    </kheperaiv>
 
   </arena>
 

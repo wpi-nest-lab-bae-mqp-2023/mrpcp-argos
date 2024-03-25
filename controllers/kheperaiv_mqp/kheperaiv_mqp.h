@@ -16,8 +16,8 @@
  *    experiments/diffusion_10.argos
  */
 
-#ifndef FOOTBOT_XML_H
-#define FOOTBOT_XML_H
+#ifndef kheperaiv_XML_H
+#define kheperaiv_XML_H
 
 /*
  * Include some necessary headers.
@@ -27,7 +27,7 @@
 /* Definition of the differential steering actuator */
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 /* Definition of the foot-bot proximity sensor */
-//#include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
+//#include <argos3/plugins/robots/kheperaiv/control_interface/ci_kheperaiv_proximity_sensor.h>
 
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
@@ -47,20 +47,20 @@ using namespace argos;
 /*
  * A controller is simply an implementation of the CCI_Controller class.
  */
-class CFootBotMQP : public CCI_Controller {
+class CKheperaIVMQP : public CCI_Controller {
 
 public:
 
    /* Class constructor. */
-   CFootBotMQP();
+   CKheperaIVMQP();
 
    /* Class destructor. */
-   virtual ~CFootBotMQP() {}
+   virtual ~CKheperaIVMQP() {}
 
    /*
     * This function initializes the controller.
     * The 't_node' variable points to the <parameters> section in the XML
-    * file in the <controllers><footbot_mqp_controller> section.
+    * file in the <controllers><kheperaiv_mqp_controller> section.
     */
    virtual void Init(TConfigurationNode& t_node);
 
@@ -108,7 +108,7 @@ private:
    /* Pointer to the differential steering actuator */
    CCI_DifferentialSteeringActuator* m_pcWheels;
    /* Pointer to the foot-bot proximity sensor */
-//   CCI_FootBotProximitySensor* m_pcProximity;
+//   CCI_KheperaIVProximitySensor* m_pcProximity;
 
    CCI_PositioningSensor* m_pcPosSens;
 
@@ -120,7 +120,7 @@ private:
     * The following variables are used as parameters for the
     * algorithm. You can set their value in the <parameters> section
     * of the XML configuration file, under the
-    * <controllers><footbot_mqp_controller> section.
+    * <controllers><kheperaiv_mqp_controller> section.
     */
 
    /* Maximum tolerance for the angle between
