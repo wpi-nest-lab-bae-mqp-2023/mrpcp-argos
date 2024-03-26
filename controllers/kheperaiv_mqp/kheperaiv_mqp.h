@@ -29,6 +29,8 @@
 /* Definition of the foot-bot proximity sensor */
 #include <argos3/plugins/robots/kheperaiv/control_interface/ci_kheperaiv_proximity_sensor.h>
 
+#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_measures.h>
+
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
 #include <fstream>
@@ -92,6 +94,8 @@ public:
 
    virtual void Drive();
 
+   virtual void ApplyTwist(double v_eff, double omega_eff);
+
     std::vector<std::vector<std::vector<float>>> path_arr;
     virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
 
@@ -146,8 +150,8 @@ private:
    CRadians yaw, temp1, temp2;
 
    //pid values for rotating, could be tuned
-   double kp = 5;
-   double kd = 1;
+   double kp = 20.;
+   double kd = 4.;
    double minimum_speed = 4;
    double maximum_speed = 0;
 

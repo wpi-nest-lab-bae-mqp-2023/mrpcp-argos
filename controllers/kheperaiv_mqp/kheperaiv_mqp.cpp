@@ -146,18 +146,13 @@ void CKheperaIVMQP::ControlStep() {
 //rotates to a set (x, y) position. yaw is the current orientation
 void CKheperaIVMQP::Rotate(){
     if(abs(angle_err) > 0.02){
-      ideal_speed = std::max(std::min(minimum_speed,abs(kp * angle_err - kd * prev_angle_err)), maximum_speed);
-      if(angle_err < 0){
-        m_pcWheels->SetLinearVelocity(ideal_speed, -ideal_speed);
-      }
-      else{
-        m_pcWheels->SetLinearVelocity(-ideal_speed, ideal_speed);
-      }
-      prev_angle_err = angle_err;
+        double omega_eff = kp * angle_err - kd * prev_angle_err;
+        ApplyTwist(0., omega_eff);
+        prev_angle_err = angle_err;
     }
     else{
-      m_pcWheels->SetLinearVelocity(0, 0);
-      m_eState = STATE_DRIVE;
+        ApplyTwist(0., 0.);
+        m_eState = STATE_DRIVE;
     }
 }
 
@@ -166,42 +161,21 @@ void CKheperaIVMQP::Drive(){
 
     // If there, get new point
     if(dist_err < 0.05){
-        m_pcWheels->SetLinearVelocity(0, 0);
+        ApplyTwist(0., 0.);
         m_eState = STATE_NEW_POINT;
         return;
     }
     // If not, drive there
+    ApplyTwist(m_fWheelVelocity * 0.8, angle_err * 10.);
+}
 
-    double left_wheel_vel = m_fWheelVelocity - angle_err * 1.;
-    double right_wheel_vel = m_fWheelVelocity + angle_err * 1.;
-
+void CKheperaIVMQP::ApplyTwist(double v_eff, double omega_eff) {
+    double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
+    double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
     m_pcWheels->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
-
-//    if(dist > 0.05 || dist < -0.05){
-//      m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
-//    }
-//    else {
-//      m_pcWheels->SetLinearVelocity(0, 0);
-//      m_eState = STATE_NEW_POINT;
-//    }
 }
-/*
-void CKheperaIVMQP::Rotate(double distance){
-
-}
-*/
 
 /****************************************/
 /****************************************/
 
-/*
- * This statement notifies ARGoS of the existence of the controller.
- * It binds the class passed as first argument to the string passed as
- * second argument.
- * The string is then usable in the configuration file to refer to this
- * controller.
- * When ARGoS reads that string in the configuration file, it knows which
- * controller class to instantiate.
- * See also the configuration files for an example of how this is used.
- */
 REGISTER_CONTROLLER(CKheperaIVMQP, "kheperaiv_mqp_controller")
