@@ -13,37 +13,20 @@
   <!-- *************** -->
   <controllers>
 
-    <footbot_mqp_controller id="diffusion"
-                                  library="build/controllers/footbot_mqp/libfootbot_mqp">
+    <kheperaiv_mqp_controller id="diffusion"
+                                  library="build/controllers/kheperaiv_mqp/libkheperaiv_mqp">
 
       <actuators>
         <differential_steering implementation="default" />
       </actuators>
 
       <sensors>
-        <footbot_proximity implementation="default" show_rays="true" />
+        <kheperaiv_proximity implementation="default" show_rays="true" />
         <positioning implementation="default" />
       </sensors>
+    <params/>
 
-<!--                   "k": k,
-                       "q_k": q_k,
-                       "n_a": n_a,
-                       "rp": rp,
-                       "l": l,
-                       "d": d,
-                       "mode": mode,
--->
-      <params>
-        <problem_params k="1"
-                        q_k="0.0"
-                        n_a="5"
-                        rp="1"
-                        l="20"
-                        d="2.5"
-                        mode="m" />
-      </params>
-
-    </footbot_mqp_controller>
+    </kheperaiv_mqp_controller>
 
   </controllers>
 
@@ -64,16 +47,16 @@
       <body position="-1.5,0,0" orientation="0,0,0" />
     </box>
 
-    <!-- Place a foot-bot in the origin and bind it to the controller -->
-    <foot-bot id="fb_0">
+    <!-- Place a kheperaiv in the origin and bind it to the controller -->
+    <kheperaiv id="fb_0">
       <body position="-1.25,-1.25,0" orientation="0,0,0" />
       <controller config="diffusion"/>
-    </foot-bot>
+    </kheperaiv>
 
-    <foot-bot id="fb_1">
+    <kheperaiv id="fb_1">
       <body position="-1.25,-1,0" orientation="0,0,0" />
       <controller config="diffusion"/>
-    </foot-bot>
+    </kheperaiv>
 
   </arena>
 
@@ -119,6 +102,24 @@
   <!--  Real -->
   <loop_functions library="build/loop_functions/get_initial_solution_mqp/libget_initial_solution_mqp"
           label="get_initial_solution_mqp">
+<!--
+  ** All required parameters to formulate and solve the problem **
+    "host": the host address of the problem solver server,
+    "k": maximum number of robots to use,
+    "nk": number of nodes to have on an axis per robot,
+    "fcr": fuel-capacity-ratio (the fuel capacity of the robots relative to the roundtrip cost between the furthest node and the depot),
+    "fr": failure-rate (in terms of ...),
+    "ssd": square-side-distance (length of the side of the square arena),
+    "mode": "m" for MILP-based solver, "h1" for Yasar's heuristic, "h2" for Cam's heuristic,
+-->
+    <problem_params host="http://127.0.0.1:5000"
+                    k="9"
+                    nk="1"
+                    fcr="5"
+                    fr="3"
+                    ssd="2.5"
+                    mode="h1" />
+
   </loop_functions>
 <!--  <loop_functions label="MasterLoopFunctions">-->
 <!--    <sub_loop_function label="BaseNetworking" />-->

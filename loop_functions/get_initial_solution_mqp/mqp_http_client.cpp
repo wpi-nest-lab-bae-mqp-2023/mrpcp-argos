@@ -37,11 +37,24 @@ bool mqp_http_client::make_http_req(nlohmann::json *data, const std::string& req
 }
 
 
-bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr, std::string host) {
-
+bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr,
+                            std::string host,
+                            int k,
+                            float nk,
+                            float fcr,
+                            float fr,
+                            float ssd,
+                            std::string mode) {
 
 //    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
-    std::string req_url = fmt::format("{}/solve?n_a=5&k=5&q_k=0.65&rp=2&l=1.5&mode=h1&d=2.5", host);
+    std::string req_url = fmt::format("{}/solve?k={}&nk={}&fcr={}&fr={}&ssd={}&mode={}",
+                                      host,
+                                      k,
+                                      nk,
+                                      fcr,
+                                      fr,
+                                      ssd,
+                                      mode);
 
     json data;
     mqp_packets::res mqp_res;

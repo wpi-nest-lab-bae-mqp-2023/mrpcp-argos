@@ -1,5 +1,5 @@
 /* Include the controller definition */
-#include "footbot_mqp.h"
+#include "kheperaiv_mqp.h"
 /* Function definitions for XML parsing */
 #include <argos3/core/utility/configuration/argos_configuration.h>
 /* 2D vector definition */
@@ -10,7 +10,7 @@
 #include <utility>
 
 
-CFootBotMQP::CFootBotMQP() :
+CKheperaIVMQP::CKheperaIVMQP() :
    m_pcWheels(NULL),
    m_pcPosSens(NULL),
    m_cAlpha(10.0f),
@@ -21,13 +21,13 @@ CFootBotMQP::CFootBotMQP() :
 
 /****************************************/
 /****************************************/
-void CFootBotMQP::SetPath(std::vector<std::vector<std::vector<float>>> path_arrki) {
+void CKheperaIVMQP::SetPath(std::vector<std::vector<std::vector<float>>> path_arrki) {
     path_arr = std::move(path_arrki);
     Reset();
 }
 
 
-void CFootBotMQP::Init(TConfigurationNode& t_node) {
+void CKheperaIVMQP::Init(TConfigurationNode& t_node) {
    /*
     * Get sensor/actuator handles
     *
@@ -45,13 +45,13 @@ void CFootBotMQP::Init(TConfigurationNode& t_node) {
     *
     * NOTE: ARGoS creates and initializes actuators and sensors
     * internally, on the basis of the lists provided the configuration
-    * file at the <controllers><footbot_diffusion><actuators> and
-    * <controllers><footbot_diffusion><sensors> sections. If you forgot to
+    * file at the <controllers><kheperaiv_diffusion><actuators> and
+    * <controllers><kheperaiv_diffusion><sensors> sections. If you forgot to
     * list a device in the XML and then you request it here, an error
     * occurs.
     */
    m_pcWheels    = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-//   m_pcProximity = GetSensor  <CCI_FootBotProximitySensor      >("footbot_proximity"    );
+   m_pcProximity = GetSensor  <CCI_kheperaivProximitySensor      >("kheperaiv_proximity");
 
    m_pcPosSens   = GetSensor  <CCI_PositioningSensor        >("positioning");
    /*
@@ -74,7 +74,7 @@ void CFootBotMQP::Init(TConfigurationNode& t_node) {
    Reset();
 }
 
-void CFootBotMQP::Reset(){
+void CKheperaIVMQP::Reset(){
 
     for (int subtouri = 0; subtouri < path_arr.size(); ++subtouri) {
         std::cout << "\tSubtour #" << subtouri << std::endl;
@@ -91,9 +91,9 @@ void CFootBotMQP::Reset(){
 /****************************************/
 /****************************************/
 
-void CFootBotMQP::ControlStep() {
+void CKheperaIVMQP::ControlStep() {
    /* Get readings from proximity sensor */
-//   const CCI_FootBotProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+//   const CCI_kheperaivProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
    /* Sum them together */
 //   CVector2 cAccumulator;
 //   for(size_t i = 0; i < tProxReads.size(); ++i) {
@@ -110,6 +110,8 @@ void CFootBotMQP::ControlStep() {
     if(path_arr.empty()){
         return;
     }
+
+    std::cout << "..." << std::endl;
 
     switch(m_eState) {
      case STATE_ROTATING: {
@@ -140,7 +142,7 @@ void CFootBotMQP::ControlStep() {
 }
 
 //rotates to a set (x, y) position. yaw is the current orientation
-void CFootBotMQP::Rotate(double x, double y, argos::CRadians yaw){
+void CKheperaIVMQP::Rotate(double x, double y, argos::CRadians yaw){
     angleerr =  atan2(y, x) - yaw.GetValue();
     while(angleerr >= pi){
       angleerr -= 2*pi;
@@ -166,7 +168,7 @@ void CFootBotMQP::Rotate(double x, double y, argos::CRadians yaw){
 }
 
 //drives a certain distance
-void CFootBotMQP::Drive(double distance){
+void CKheperaIVMQP::Drive(double distance){
     if(distance > 0.05 || distance < -0.05){
       m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
     }
@@ -176,7 +178,7 @@ void CFootBotMQP::Drive(double distance){
     }
 }
 /*
-void CFootBotMQP::Rotate(double distance){
+void CKheperaIVMQP::Rotate(double distance){
 
 }
 */
@@ -194,4 +196,4 @@ void CFootBotMQP::Rotate(double distance){
  * controller class to instantiate.
  * See also the configuration files for an example of how this is used.
  */
-REGISTER_CONTROLLER(CFootBotMQP, "footbot_mqp_controller")
+REGISTER_CONTROLLER(CKheperaIVMQP, "kheperaiv_mqp_controller")
