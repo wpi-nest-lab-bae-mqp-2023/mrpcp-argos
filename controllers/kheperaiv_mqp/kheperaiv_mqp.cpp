@@ -75,66 +75,64 @@ void CKheperaIVMQP::Init(TConfigurationNode& t_node) {
 }
 
 void CKheperaIVMQP::Reset(){
-
-    for (int subtouri = 0; subtouri < path_arr.size(); ++subtouri) {
-        std::cout << "\tSubtour #" << subtouri << std::endl;
-        for (int pointi = 0; pointi < path_arr[subtouri].size(); ++pointi) {
-            std::cout << "\t\tPoint: [" << path_arr[subtouri][pointi][0] << ", " << path_arr[subtouri][pointi][1] << "]" << std::endl;
-        }
-    }
-
     m_eState = STATE_ROTATING;
+
+    c = 0;
+    subtour_idc = 0;
+    if(path_arr.empty()){ return; }
+    goal_pos.SetX(path_arr[subtour_idc][c][0]);
+    goal_pos.SetY(path_arr[subtour_idc][c][1]);
 }
-
-
 
 /****************************************/
 /****************************************/
 
 void CKheperaIVMQP::ControlStep() {
-   /* Get readings from proximity sensor */
-   const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
-   /* Sum them together */
-   CVector2 cAccumulator;
-   for(size_t i = 0; i < tProxReads.size(); ++i) {
-      cAccumulator += CVector2(tProxReads[i].Value, tProxReads[i].Angle);
-//       std::cout << i << "..." << tProxReads[i].Value << "..." << tProxReads[i].Angle << std::endl;
-   }
-   cAccumulator /= tProxReads.size();
-
-    std::cout << "Angle" << cAccumulator.Angle() << "Length" << cAccumulator.Length() << std::endl;
-
-
-    pos = m_pcPosSens->GetReading().Position;
-   quat = m_pcPosSens->GetReading().Orientation;
-
-   /* If the angle of the vecUInt32tor is small enough and the closest obstacle
-    * is far enough, continue going straight, otherwise curve a little
-    */
-    if(path_arr.empty()){
-        return;
+    /* Get readings from proximity sensor */
+    const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+    /* Sum them together */
+    CVector2 cAccumulator;
+    for(size_t i = 0; i < tProxReads.size(); ++i) {
+        cAccumulator += CVector2(tProxReads[i].Value, tProxReads[i].Angle);
     }
+    cAccumulator /= tProxReads.size();
 
-    std::cout << "..." << std::endl;
+//    std::cout << "Angle" << cAccumulator.Angle() << "Length" << cAccumulator.Length() << std::endl;
+    curr_pos = m_pcPosSens->GetReading().Position;
+    quat = m_pcPosSens->GetReading().Orientation;
+    quat.ToEulerAngles(yaw, temp1, temp2);
+
+    double x_err = goal_pos.GetX() - curr_pos.GetX();
+    double y_err = goal_pos.GetY() - curr_pos.GetY();
+    dist_err = sqrt(pow(x_err, 2) + pow(y_err, 2));
+
+    angle_err = atan2(y_err, x_err) - yaw.GetValue();
+    if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
+    if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
+
+    if(path_arr.empty()){ return; }
 
     switch(m_eState) {
      case STATE_ROTATING: {
-       quat.ToEulerAngles(yaw, temp1, temp2);
-       Rotate(path_arr[subtour_idc][c][0]-pos[0], path_arr[subtour_idc][c][1]-pos[1], yaw);
-       break;
+         Rotate();
+         break;
      }
      case STATE_DRIVE: {
-       double dist = sqrt(pow(path_arr[subtour_idc][c][0]-pos[0],2)+pow(path_arr[subtour_idc][c][1]-pos[1],2));
-       Drive(dist);
-       break;
+         Drive();
+         break;
      }
      case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
        c += 1;
        if(c==path_arr[subtour_idc].size()){
          c = 0;
          subtour_idc += 1;
+         if(subtour_idc==path_arr.size()){
+             subtour_idc = 0;
+         }
        }
-         std::cout << "new point:" << path_arr[subtour_idc][c][0] << "," << path_arr[subtour_idc][c][1] << std::endl;
+       goal_pos.SetX(path_arr[subtour_idc][c][0]);
+       goal_pos.SetY(path_arr[subtour_idc][c][1]);
+       std::cout << "New Point:" << goal_pos.GetX() << "," << goal_pos.GetY() << std::endl;
 
        m_eState = STATE_ROTATING;
        break;
@@ -146,24 +144,16 @@ void CKheperaIVMQP::ControlStep() {
 }
 
 //rotates to a set (x, y) position. yaw is the current orientation
-void CKheperaIVMQP::Rotate(double x, double y, argos::CRadians yaw){
-    angleerr =  atan2(y, x) - yaw.GetValue();
-    while(angleerr >= pi){
-      angleerr -= 2*pi;
-    }
-    while(angleerr <= -pi){
-      angleerr += 2*pi;
-    }
-
-    if(abs(angleerr) > 0.02){
-      ideal_speed = std::max(std::min(minimum_speed,abs(kp*angleerr - kd*prevangleerr)), maximum_speed);
-      if(angleerr<0){
+void CKheperaIVMQP::Rotate(){
+    if(abs(angle_err) > 0.02){
+      ideal_speed = std::max(std::min(minimum_speed,abs(kp * angle_err - kd * prev_angle_err)), maximum_speed);
+      if(angle_err < 0){
         m_pcWheels->SetLinearVelocity(ideal_speed, -ideal_speed);
       }
       else{
         m_pcWheels->SetLinearVelocity(-ideal_speed, ideal_speed);
       }
-      prevangleerr = angleerr;
+      prev_angle_err = angle_err;
     }
     else{
       m_pcWheels->SetLinearVelocity(0, 0);
@@ -172,14 +162,28 @@ void CKheperaIVMQP::Rotate(double x, double y, argos::CRadians yaw){
 }
 
 //drives a certain distance
-void CKheperaIVMQP::Drive(double distance){
-    if(distance > 0.05 || distance < -0.05){
-      m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
+void CKheperaIVMQP::Drive(){
+
+    // If there, get new point
+    if(dist_err < 0.05){
+        m_pcWheels->SetLinearVelocity(0, 0);
+        m_eState = STATE_NEW_POINT;
+        return;
     }
-    else {
-      m_pcWheels->SetLinearVelocity(0, 0);
-      m_eState = STATE_NEW_POINT;
-    }
+    // If not, drive there
+
+    double left_wheel_vel = m_fWheelVelocity - angle_err * 1.;
+    double right_wheel_vel = m_fWheelVelocity + angle_err * 1.;
+
+    m_pcWheels->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
+
+//    if(dist > 0.05 || dist < -0.05){
+//      m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
+//    }
+//    else {
+//      m_pcWheels->SetLinearVelocity(0, 0);
+//      m_eState = STATE_NEW_POINT;
+//    }
 }
 /*
 void CKheperaIVMQP::Rotate(double distance){

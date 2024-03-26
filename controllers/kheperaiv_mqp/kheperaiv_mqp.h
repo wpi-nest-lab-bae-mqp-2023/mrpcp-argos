@@ -88,9 +88,9 @@ public:
     */
    virtual void Destroy() {}
 
-   virtual void Rotate(double x, double y, argos::CRadians yaw);
+   virtual void Rotate();
 
-   virtual void Drive(double distance);
+   virtual void Drive();
 
     std::vector<std::vector<std::vector<float>>> path_arr;
     virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
@@ -140,7 +140,8 @@ private:
     * It is set to [-alpha,alpha]. */
    CRange<CRadians> m_cGoStraightAngleRange;
 
-   CVector3 pos;
+   CVector3 curr_pos;
+   CVector3 goal_pos;
    CQuaternion quat;
    CRadians yaw, temp1, temp2;
 
@@ -152,13 +153,13 @@ private:
 
    double ideal_speed;
 
-   double angleerr, prevangleerr = 0;
+    double dist_err = 0.;
+    double angle_err = 0.;
+    double prev_angle_err = 0.;
 
    int c = 0;
    int subtour_idc = 0;
-   std::string path;
    EState m_eState;
-   double pi = 3.1415926;
 
 
 };
