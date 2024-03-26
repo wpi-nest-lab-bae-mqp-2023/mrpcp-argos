@@ -27,7 +27,7 @@
 /* Definition of the differential steering actuator */
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 /* Definition of the foot-bot proximity sensor */
-//#include <argos3/plugins/robots/kheperaiv/control_interface/ci_kheperaiv_proximity_sensor.h>
+#include <argos3/plugins/robots/kheperaiv/control_interface/ci_kheperaiv_proximity_sensor.h>
 
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
@@ -108,7 +108,7 @@ private:
    /* Pointer to the differential steering actuator */
    CCI_DifferentialSteeringActuator* m_pcWheels;
    /* Pointer to the foot-bot proximity sensor */
-//   CCI_KheperaIVProximitySensor* m_pcProximity;
+   CCI_KheperaIVProximitySensor* m_pcProximity;
 
    CCI_PositioningSensor* m_pcPosSens;
 

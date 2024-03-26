@@ -13,19 +13,21 @@
   <!-- *************** -->
   <controllers>
 
-    <kheperaiv_mqp_controller id="diffusion"
-                                  library="build/controllers/kheperaiv_mqp/libkheperaiv_mqp">
+    <kheperaiv_mqp_controller id="diffusion" library="build/controllers/kheperaiv_mqp/libkheperaiv_mqp">
 
+      <!-- Actuators -->
       <actuators>
         <differential_steering implementation="default" />
       </actuators>
 
+      <!-- Sensors -->
       <sensors>
         <kheperaiv_proximity implementation="default" show_rays="true" />
         <positioning implementation="default" />
       </sensors>
-    <params/>
 
+      <!-- Params -->
+      <params alpha="7.5" delta="0.1" velocity="5" />
     </kheperaiv_mqp_controller>
 
   </controllers>

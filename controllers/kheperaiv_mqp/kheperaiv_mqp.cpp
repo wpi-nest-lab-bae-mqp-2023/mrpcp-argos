@@ -51,7 +51,7 @@ void CKheperaIVMQP::Init(TConfigurationNode& t_node) {
     * occurs.
     */
    m_pcWheels    = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
-   m_pcProximity = GetSensor  <CCI_kheperaivProximitySensor      >("kheperaiv_proximity");
+   m_pcProximity = GetSensor  <CCI_KheperaIVProximitySensor>("kheperaiv_proximity");
 
    m_pcPosSens   = GetSensor  <CCI_PositioningSensor        >("positioning");
    /*
@@ -93,15 +93,19 @@ void CKheperaIVMQP::Reset(){
 
 void CKheperaIVMQP::ControlStep() {
    /* Get readings from proximity sensor */
-//   const CCI_kheperaivProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+   const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
    /* Sum them together */
-//   CVector2 cAccumulator;
-//   for(size_t i = 0; i < tProxReads.size(); ++i) {
-//      cAccumulator += CVector2(tProxReads[i].Value, tProxReads[i].Angle);
-//   }
-//   cAccumulator /= tProxReads.size();
+   CVector2 cAccumulator;
+   for(size_t i = 0; i < tProxReads.size(); ++i) {
+      cAccumulator += CVector2(tProxReads[i].Value, tProxReads[i].Angle);
+//       std::cout << i << "..." << tProxReads[i].Value << "..." << tProxReads[i].Angle << std::endl;
+   }
+   cAccumulator /= tProxReads.size();
 
-   pos = m_pcPosSens->GetReading().Position;
+    std::cout << "Angle" << cAccumulator.Angle() << "Length" << cAccumulator.Length() << std::endl;
+
+
+    pos = m_pcPosSens->GetReading().Position;
    quat = m_pcPosSens->GetReading().Orientation;
 
    /* If the angle of the vecUInt32tor is small enough and the closest obstacle
