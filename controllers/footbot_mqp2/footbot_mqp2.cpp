@@ -319,9 +319,13 @@ bool CFootBotMQP2::Drive(double distance){
 
 //rotates around a point of specified radius
 void CFootBotMQP2::Circle(double radius){
-  m_pcWheels->SetLinearVelocity(3*m_fWheelVelocity*(radius - wheelbase/2), 3*m_fWheelVelocity*(radius + wheelbase/2));
+  if(wait == true){
+    m_pcWheels->SetLinearVelocity(0,0);
+  }
+  else{
+    m_pcWheels->SetLinearVelocity(3*m_fWheelVelocity*(radius - wheelbase/2), 3*m_fWheelVelocity*(radius + wheelbase/2));
+  }
 
-  LOGERR << pos[0] << "<" << pos[1] << std::endl;
   //if done circling
   if(-0.5-pos[0] < 0.06 && -0.5-pos[0] > -0.06 && depot[1]-pos[1] < 0.06 && depot[1]-pos[1] > -0.06){
     m_eState = STATE_NEW_POINT;

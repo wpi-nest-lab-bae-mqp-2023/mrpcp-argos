@@ -48,7 +48,7 @@ void GetInitialSolutionMQP2::Init(TConfigurationNode& t_tree) {
 
 
 void GetInitialSolutionMQP2::PreStep() {
-    int numOfRobots = 2;
+    int numOfRobots = 4;
    /* Logic to pick and drop food items */
    /*
     * If a robot is in the nest, drop the food item
@@ -85,11 +85,10 @@ void GetInitialSolutionMQP2::PreStep() {
       ki += 1;
    }
 
+   double pi = 3.1415926;
 
    //check if within the depot
    //check if distance between is greater than a certain thing and if one is oriented at another
-   for(int i = 0; i < numOfRobots; i++){
-   }
 
    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
        it != m_cFootbots.end();
@@ -97,6 +96,8 @@ void GetInitialSolutionMQP2::PreStep() {
 
       CFootBotEntity& cFootBot = *any_cast<CFootBotEntity*>(it->second);
       CFootBotMQP2 &cController = dynamic_cast<CFootBotMQP2 &>(cFootBot.GetControllableEntity().GetController());
+
+      cController.wait = false;
 
       CVector2 cPos;
       cPos.Set(cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
@@ -107,12 +108,19 @@ void GetInitialSolutionMQP2::PreStep() {
 
        for(int j = 0; j < numOfRobots; j++){
          if(cPos != robot_posn[j]){
-           cController.wait = false;
+           //cController.wait = false;
 
            double diffAngle = cZAngle.GetValue() - atan2(robot_posn[j].GetY() - cPos.GetY(), robot_posn[j].GetX() - cPos.GetX());
+           while(diffAngle >= pi){
+             diffAngle -= 2*pi;
+           }
+           while(diffAngle <= -pi){
+             diffAngle += 2*pi;
+           }
+
            double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
-           if(diffAngle < 0.05 && diffAngle > -0.05 && distance < 0.5 && distance > -0.5){
-             LOGERR <<"!" << std::endl;
+
+           if(diffAngle < 0.5 && diffAngle > -0.5 && distance < 0.5 && distance > -0.5){
              cController.wait = true;
            }
            //}
