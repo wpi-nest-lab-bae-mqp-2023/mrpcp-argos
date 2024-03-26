@@ -42,7 +42,7 @@ void GetInitialSolutionMQP2::Init(TConfigurationNode& t_tree) {
     }
     */
 
-    std::cout << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
+    LOGERR << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
 }
 
 
@@ -58,6 +58,8 @@ void GetInitialSolutionMQP2::PreStep() {
 
    CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("foot-bot");
    CVector2 robot_posn[numOfRobots];
+   CRadians robot_angle[numOfRobots];
+
    int ki = 0;
    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
        it != m_cFootbots.end();
@@ -71,13 +73,22 @@ void GetInitialSolutionMQP2::PreStep() {
       cPos.Set(cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
                cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
 
+      CRadians cZAngle, _;
+      cFootBot.GetEmbodiedEntity().GetOriginAnchor().Orientation.ToEulerAngles(cZAngle, _, _);
       //check if anyone is in the depot @ -1 -1
       //if y, WAIT[k] = True
 
       //check if anyone is circling before the current robot. if yes, slow speed
 
       robot_posn[ki] = cPos;
+      robot_angle[ki] = cZAngle;
       ki += 1;
+   }
+
+
+   //check if within the depot
+   //check if distance between is greater than a certain thing and if one is oriented at another
+   for(int i = 0; i < numOfRobots; i++){
    }
 
    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
@@ -91,15 +102,22 @@ void GetInitialSolutionMQP2::PreStep() {
       cPos.Set(cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
                cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
 
-      if(cController.m_eState == 1 && cController.path_arr[ki][0] == -1 && cController.path_arr[ki][1] == -1){//if current robot is entering depot
-        //if(cPos.GetX() - )
+       CRadians cZAngle, _;
+       cFootBot.GetEmbodiedEntity().GetOriginAnchor().Orientation.ToEulerAngles(cZAngle, _, _);
 
+       for(int j = 0; j < numOfRobots; j++){
+         if(cPos != robot_posn[j]){
+           cController.wait = false;
 
-      }
-
-      for(int i = 0; i < numOfRobots; ++i){
-        cController.robot_posn[i] = robot_posn[i];
-      }
+           double diffAngle = cZAngle.GetValue() - atan2(robot_posn[j].GetY() - cPos.GetY(), robot_posn[j].GetX() - cPos.GetX());
+           double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
+           if(diffAngle < 0.05 && diffAngle > -0.05 && distance < 0.5 && distance > -0.5){
+             LOGERR <<"!" << std::endl;
+             cController.wait = true;
+           }
+           //}
+         }
+       }
    }
 
 }

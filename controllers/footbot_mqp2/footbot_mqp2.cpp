@@ -304,8 +304,11 @@ bool CFootBotMQP2::RotateToCircle(argos::CRadians desiredAngle, argos::CRadians 
 
 //drives a certain distance
 bool CFootBotMQP2::Drive(double distance){
-    if(distance > 0.05 || distance < -0.05){
+    if(wait == false && (distance > 0.05 || distance < -0.05)){
       m_pcWheels->SetLinearVelocity(m_fWheelVelocity, m_fWheelVelocity);
+    }
+    else if(wait == true){
+      m_pcWheels->SetLinearVelocity(0, 0);
     }
     else {
       m_pcWheels->SetLinearVelocity(0, 0);

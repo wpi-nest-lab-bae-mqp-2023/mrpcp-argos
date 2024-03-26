@@ -99,7 +99,7 @@ public:
 
    double path_arr[50][2];
    CVector2 robot_posn[2];
-   bool wait[2];
+   bool wait;
 
    enum EState {
      STATE_GOING_TO_POINT = 0,
