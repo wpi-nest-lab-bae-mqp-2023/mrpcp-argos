@@ -27,6 +27,7 @@ public:
 
 private:
     std::vector<std::vector<std::vector<std::vector<float>>>> path_arr;
+    std::vector<CKheperaIVEntity*> cKheperaIVs;
 
 };
 

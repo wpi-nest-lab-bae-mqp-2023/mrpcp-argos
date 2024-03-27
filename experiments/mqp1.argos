@@ -13,7 +13,7 @@
   <!-- *************** -->
   <controllers>
 
-    <kheperaiv_mqp_controller id="diffusion" library="build/controllers/kheperaiv_mqp/libkheperaiv_mqp">
+    <kheperaiv_mqp_controller id="kheperaiv_mqp_controller" library="build/controllers/kheperaiv_mqp/libkheperaiv_mqp">
 
       <!-- Actuators -->
       <actuators>
@@ -48,20 +48,6 @@
     <box id="wall_bottom" size="0.1,2.5,0.5" movable="false">
       <body position="-1.5,0.25,0" orientation="0,0,0" />
     </box>
-
-    <distribute>
-      <position method="grid"
-                center="-1.5,-1.5,0"
-                distances="0.2,0.2,0"
-                layout="3,3,1" />
-      <orientation method="gaussian" mean="0,0,0" std_dev="360,0,0" />
-      <entity quantity="3" max_trials="100">
-        <kheperaiv id="fb_">
-          <controller config="diffusion" />
-        </kheperaiv>
-      </entity>
-    </distribute>
-
 
   </arena>
 
@@ -124,6 +110,8 @@
                     fr="3"
                     ssd="2.5"
                     mode="h1" />
+
+    <arena_params initial-robot-spacing="0.3" />
 
   </loop_functions>
 <!--  <loop_functions label="MasterLoopFunctions">-->

@@ -1,11 +1,12 @@
 #include "get_initial_solution_mqp.h"
 
 #include <argos3/plugins/simulator/entities/box_entity.h>
-#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
 #include <controllers/kheperaiv_mqp/kheperaiv_mqp.h>
 
 #include <sstream>
 #include <list>
+#include <fmt/core.h>
+
 
 using namespace argos;
 
@@ -52,22 +53,37 @@ void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, mode);
 //    mqp_http_client::printPaths(path_arr);
 
-    CSpace::TMapPerType& m_ckheperaivs = GetSpace().GetEntitiesByType("kheperaiv");
+    unsigned long num_of_robots = 3;
+//    unsigned long num_of_robots = path_arr.size();
+    unsigned long num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots / 2.));
 
-    unsigned int ki = 0;
-    for(CSpace::TMapPerType::iterator it = m_ckheperaivs.begin();
-        it != m_ckheperaivs.end();
-        ++it) {
-        CKheperaIVEntity &cKheperaIV = *any_cast<CKheperaIVEntity *>(it->second);
-        CKheperaIVMQP &cController = dynamic_cast<CKheperaIVMQP &>(cKheperaIV.GetControllableEntity().GetController());
+    CQuaternion random_quat;
+    auto m_pcRNG = CRandom::CreateRNG("argos");
 
-        std::cout << "Robot id: " << ki << std::endl;
-        cController.id = ki;
-        cController.SetPath(path_arr[ki]);
-        mqp_http_client::printPath(cController.path_arr);
-        ki += 1;
+    double depot_x = path_arr[0][0][0][0];
+    double depot_y = path_arr[0][0][0][1];
+    double delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
+
+    for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
+        for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
+            unsigned long robot_id = i * num_of_robots_per_side + j;
+            if (robot_id >= num_of_robots) { break; }
+
+            random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
+
+            // Populate the robots array and configure the robot
+            cKheperaIVs.push_back(new CKheperaIVEntity(
+                    fmt::format("kheperaiv-{}", robot_id),
+                    "kheperaiv_mqp_controller",
+                    CVector3(depot_x - i * delta, depot_y - j * delta, 0),
+                    random_quat));
+            AddEntity(*cKheperaIVs[robot_id]);
+
+            auto &cController = dynamic_cast<CKheperaIVMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
+            cController.id = robot_id;
+            cController.SetPath(path_arr[robot_id]);
+        }
     }
-
 
     std::cout << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
 }
