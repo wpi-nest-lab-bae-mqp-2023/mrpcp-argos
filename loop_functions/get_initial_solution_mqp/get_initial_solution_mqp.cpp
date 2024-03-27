@@ -62,6 +62,7 @@ void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
         CKheperaIVMQP &cController = dynamic_cast<CKheperaIVMQP &>(cKheperaIV.GetControllableEntity().GetController());
 
         std::cout << "Robot id: " << ki << std::endl;
+        cController.id = ki;
         cController.SetPath(path_arr[ki]);
         mqp_http_client::printPath(cController.path_arr);
         ki += 1;

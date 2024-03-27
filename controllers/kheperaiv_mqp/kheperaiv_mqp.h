@@ -40,6 +40,10 @@
 #include <string>
 
 #include <sstream>
+
+#include "PIDController.h"
+
+
 /*
  * All the ARGoS stuff in the 'argos' namespace.
  * With this statement, you save typing argos:: every time.
@@ -99,6 +103,9 @@ public:
     std::vector<std::vector<std::vector<float>>> path_arr;
     virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
 
+    int id;
+
+
 private:
   /* The three possible states in which the controller can be */
   enum EState {
@@ -139,21 +146,27 @@ private:
     */
    Real m_fDelta;
    /* Wheel speed. */
-   Real m_fWheelVelocity;
+   Real maxRobotVelocity;
+   Real maxRobotOmega;
    /* Angle tolerance range to go straight.
     * It is set to [-alpha,alpha]. */
    CRange<CRadians> m_cGoStraightAngleRange;
 
    CVector3 curr_pos;
+   CVector3 prev_pos;
+   bool prev_pos_filled = false;
+   CVector3 curr_vel;
    CVector3 goal_pos;
    CQuaternion quat;
    CRadians yaw, temp1, temp2;
 
-   //pid values for rotating, could be tuned
-   double kp = 20.;
-   double kd = 4.;
-   double minimum_speed = 4;
-   double maximum_speed = 0;
+   // PID values
+   double vel_kp;
+   double vel_ki;
+   double vel_kd;
+   double theta_kp;
+   double theta_ki;
+   double theta_kd;
 
    double ideal_speed;
 
@@ -165,6 +178,12 @@ private:
    int subtour_idc = 0;
    EState m_eState;
 
+   PIDController vel_ctrl;
+   PIDController theta_ctrl;
+
+   double df = 10.;
+   double d_min = 0.05;
+   double d_max = 0.125;
 
 };
 
