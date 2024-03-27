@@ -53,8 +53,8 @@ void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, mode);
 //    mqp_http_client::printPaths(path_arr);
 
-    unsigned long num_of_robots = 3;
-//    unsigned long num_of_robots = path_arr.size();
+//    unsigned long num_of_robots = 3;
+    unsigned long num_of_robots = path_arr.size();
     unsigned long num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots / 2.));
 
     CQuaternion random_quat;
