@@ -191,21 +191,21 @@ void CKheperaIVMQP::Drive(){
         f_r -= CVector2(tProxReads[i].Value, tProxReads[i].Angle);
     }
     f_r /= tProxReads.size();
-    double d = 0.125 - f_r.Length();
+    double d = KHEPERAIV_IR_SENSORS_RING_RANGE - f_r.Length();
 //    std::cout << "d: " << d << std::endl;
     if (f_r.Length() > 0.) { f_r.Normalize(); }
     f_r.Rotate(CRadians(yaw.GetValue()));
-    double f_r_angle_err = atan2(f_r.GetY(), f_r.GetX());  // - yaw.GetValue();
-    if(f_r_angle_err >= M_PI) { f_r_angle_err -= 2 * M_PI; }
-    if(f_r_angle_err < -M_PI) { f_r_angle_err += 2 * M_PI; }
+//    double f_r_angle_err = atan2(f_r.GetY(), f_r.GetX());  // - yaw.GetValue();
+//    if(f_r_angle_err >= M_PI) { f_r_angle_err -= 2 * M_PI; }
+//    if(f_r_angle_err < -M_PI) { f_r_angle_err += 2 * M_PI; }
 //    std::cout << "f_r angle_err: " << f_r_angle_err << std::endl;
 
     /* Calculate f_a (attractive force) */
     CVector2 f_a(goal_pos.GetX() - curr_pos.GetX(), goal_pos.GetY() - curr_pos.GetY());
     if (f_a.Length() > 0.) { f_a.Normalize(); }
-    double f_a_angle_err = atan2(f_a.GetY(), f_a.GetX()) - yaw.GetValue();
-    if(f_a_angle_err >= M_PI) { f_a_angle_err -= 2 * M_PI; }
-    if(f_a_angle_err < -M_PI) { f_a_angle_err += 2 * M_PI; }
+//    double f_a_angle_err = atan2(f_a.GetY(), f_a.GetX()) - yaw.GetValue();
+//    if(f_a_angle_err >= M_PI) { f_a_angle_err -= 2 * M_PI; }
+//    if(f_a_angle_err < -M_PI) { f_a_angle_err += 2 * M_PI; }
 //    std::cout << "f_a angle_err: " << f_a_angle_err << std::endl;
 
     double f = std::max(0., (-df/(d_max - d_min)) * (d - d_min) + df);
@@ -217,8 +217,10 @@ void CKheperaIVMQP::Drive(){
 //    std::cout << "f_t angle_err: " << angle_err << std::endl;
     double omega_eff = theta_ctrl.computeEffort(angle_err);
 
-    double v_err = maxRobotVelocity * std::max(0., std::min(1., (d - d_min) / (d_max - d_min))) - curr_vel.Length();
-//    if (f_r.Length() > 0. && (f_r_angle_err >= M_PI / 2. || f_r_angle_err <= -M_PI / 2.)) { v_err *= -1.; }
+    double v_des_coeff = std::max(0., std::min(1., (d - d_min) / (d_max - d_min)));
+    // Clip it based on distance left
+    v_des_coeff = std::min(v_des_coeff, std::max(dist_err, KHEPERAIV_BASE_RADIUS) / (KHEPERAIV_BASE_RADIUS));
+    double v_err = maxRobotVelocity * v_des_coeff - curr_vel.Length();
     if (f_r.Length() > 0. && (angle_err >= M_PI / 2. || angle_err <= -M_PI / 2.)) { v_err *= -1.; }
 //    std::cout << "v_err: " << v_err << std::endl;
 
