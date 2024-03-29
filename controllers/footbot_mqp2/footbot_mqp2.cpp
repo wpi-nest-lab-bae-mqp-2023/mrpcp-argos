@@ -176,36 +176,6 @@ void CFootBotMQP2::ControlStep() {
 }
 
 void CFootBotMQP2::RotateDriveRotate(double x, double y, argos::CRadians yaw, bool goingToDepot){
-  //rotate to desired position
-  /*
-  if(finished_first_rot == false){
-    finished_first_rot = Rotate(x, y, yaw);
-  }
-  else{ //when finished rotating, drive to desired position
-      double dist = sqrt(pow(x,2)+pow(y,2));
-
-      if(finished_drive == false){
-        finished_drive = Drive(dist);
-      }
-      else{ //when finished driving, rotate to desired angle
-        if(goingToDepot && finished_second_rot == false){
-          finished_second_rot = Rotate(0, 1, yaw);
-        }
-        else {
-          finished_drive = false;
-          finished_first_rot = false;
-          finished_second_rot = false;
-
-          if(goingToDepot){
-            m_eState = AT_DEPOT;
-          }
-          else{
-            m_eState = STATE_NEW_POINT;
-          }
-        }
-      }
-  }
-  */
   if(finished_first_rot == false){
     finished_first_rot = Rotate(x, y, yaw);
   }
