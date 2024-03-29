@@ -150,7 +150,7 @@ void CollisionHandlingLoop::PreStep() {
 
            double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
 
-           if(diffAngle < 0.5 && diffAngle > -0.5 && distance < 0.5 && distance > -0.5){
+           if(diffAngle < 0.5 && diffAngle > -0.5 && distance < 0.2 && distance > -0.2){
              cController.wait = true;
            }
            //}

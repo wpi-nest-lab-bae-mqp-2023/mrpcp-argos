@@ -131,6 +131,7 @@ void CFootBotCollisionHandling::ControlStep() {
 
     switch(m_eState) {
       case STATE_GOING_TO_POINT: {
+
         if(path_arr[c][0][0] == depot_x && path_arr[c][0][1] == depot_y){
           RotateDriveRotate(true);
         }
@@ -168,7 +169,6 @@ void CFootBotCollisionHandling::RotateDriveRotate(bool goingToDepot){
     finished_first_rot = Rotate();
   }
   else{ //when finished rotating, drive to desired position
-    double dist;
       if(goingToDepot == true){
         //goal_pos.SetX()
         //goal_pos.SetY()
@@ -182,9 +182,9 @@ void CFootBotCollisionHandling::RotateDriveRotate(bool goingToDepot){
 
       if(finished_drive == false){
         finished_drive = Drive();
-        ogYaw.SetValue(yaw.GetValue() - 1.5708);
       }
       else{ //when finished driving, rotate to desired angle
+        LOGERR << "finished driving" << std::endl;
         if(goingToDepot && finished_second_rot == false){
           if(goingToDepot == true){
             finished_second_rot = RotateToCircle(ogYaw, yaw);
@@ -212,6 +212,7 @@ void CFootBotCollisionHandling::RotateDriveRotate(bool goingToDepot){
 
 //rotates to a set (x, y) position. yaw is the current orientation
 bool CFootBotCollisionHandling::Rotate(){
+    LOGERR << "rotating" << std::endl;
     if(abs(angle_err) > 0.02){
         double omega_eff = theta_ctrl.computeEffort(angle_err);
         ApplyTwist(0., omega_eff);
@@ -226,9 +227,12 @@ bool CFootBotCollisionHandling::Rotate(){
 //drives a certain distance
 bool CFootBotCollisionHandling::Drive(){
   if(wait == true){
+    LOGERR << "1" << std::endl;
     m_pcWheels->SetLinearVelocity(0, 0);
   }
   else{
+    LOGERR << "2" << std::endl;
+
     // If there, get new point
     if(dist_err < 0.05){
         if(goal_pos.GetX() == depot_x && goal_pos.GetY() == depot_y){
@@ -238,48 +242,50 @@ bool CFootBotCollisionHandling::Drive(){
           ApplyTwist(0., 0.);
           return true;
         }
-        return false;
     }
 
-    // If not, drive there
+    else{
+      // If not, drive there
 
-    /* Calculate f_r (repulsive force) */
-    CVector2 f_r;
-    const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
-    for(size_t i = 0; i < tProxReads.size(); ++i) {
-        f_r -= CVector2(tProxReads[i].Value, tProxReads[i].Angle);
+      /* Calculate f_r (repulsive force) */
+      CVector2 f_r;
+      const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+      for(size_t i = 0; i < tProxReads.size(); ++i) {
+          f_r -= CVector2(tProxReads[i].Value, tProxReads[i].Angle);
+      }
+      f_r /= tProxReads.size();
+      double d = KHEPERAIV_IR_SENSORS_RING_RANGE - f_r.Length();
+
+      if (f_r.Length() > 0.) { f_r.Normalize(); }
+      f_r.Rotate(CRadians(yaw.GetValue()));
+
+      /* Calculate f_a (attractive force) */
+      CVector2 f_a(goal_pos.GetX() - curr_pos.GetX(), goal_pos.GetY() - curr_pos.GetY());
+      if (f_a.Length() > 0.) { f_a.Normalize(); }
+
+      double f = std::max(0., (-df/(d_max - d_min)) * (d - d_min) + df);
+      CVector2 f_t = f_a + f * f_r;
+
+      angle_err = atan2(f_t.GetY(), f_t.GetX()) - yaw.GetValue();
+      if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
+      if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
+
+      double omega_eff = theta_ctrl.computeEffort(angle_err);
+
+      double v_des_coeff = std::max(0., std::min(1., (d - d_min) / (d_max - d_min)));
+      // Clip it based on distance left
+      v_des_coeff = std::min(v_des_coeff, std::max(dist_err, KHEPERAIV_BASE_RADIUS) / (KHEPERAIV_BASE_RADIUS));
+      double v_err = maxRobotVelocity * v_des_coeff - curr_vel.Length();
+      if (f_r.Length() > 0. && (angle_err >= M_PI / 2. || angle_err <= -M_PI / 2.)) { v_err *= -1.; }
+
+      double vel_eff = vel_ctrl.computeEffort(v_err);
+
+      ApplyTwist(vel_eff, omega_eff);
+
+      ogYaw.SetValue(yaw.GetValue() - 1.5708);
     }
-    f_r /= tProxReads.size();
-    double d = KHEPERAIV_IR_SENSORS_RING_RANGE - f_r.Length();
-
-    if (f_r.Length() > 0.) { f_r.Normalize(); }
-    f_r.Rotate(CRadians(yaw.GetValue()));
-
-    /* Calculate f_a (attractive force) */
-    CVector2 f_a(goal_pos.GetX() - curr_pos.GetX(), goal_pos.GetY() - curr_pos.GetY());
-    if (f_a.Length() > 0.) { f_a.Normalize(); }
-
-    double f = std::max(0., (-df/(d_max - d_min)) * (d - d_min) + df);
-    CVector2 f_t = f_a + f * f_r;
-
-    angle_err = atan2(f_t.GetY(), f_t.GetX()) - yaw.GetValue();
-    if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
-    if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
-
-    double omega_eff = theta_ctrl.computeEffort(angle_err);
-
-    double v_des_coeff = std::max(0., std::min(1., (d - d_min) / (d_max - d_min)));
-    // Clip it based on distance left
-    v_des_coeff = std::min(v_des_coeff, std::max(dist_err, KHEPERAIV_BASE_RADIUS) / (KHEPERAIV_BASE_RADIUS));
-    double v_err = maxRobotVelocity * v_des_coeff - curr_vel.Length();
-    if (f_r.Length() > 0. && (angle_err >= M_PI / 2. || angle_err <= -M_PI / 2.)) { v_err *= -1.; }
-
-    double vel_eff = vel_ctrl.computeEffort(v_err);
-
-    ApplyTwist(vel_eff, omega_eff);
-
-    ogYaw.SetValue(yaw.GetValue() - 1.5708);
   }
+  return false;
 }
 
 void CFootBotCollisionHandling::ApplyTwist(double v_eff, double omega_eff) {
