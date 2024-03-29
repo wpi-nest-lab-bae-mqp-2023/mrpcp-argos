@@ -94,9 +94,11 @@ public:
     */
    virtual void Destroy() {}
 
-   virtual void Rotate();
+   bool Rotate();
 
-   virtual void Drive();
+   bool Drive();
+
+   void RotateDriveRotate(bool goingToDepot);
 
    bool RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw);
 
@@ -117,12 +119,10 @@ public:
 private:
   /* The three possible states in which the controller can be */
   enum EState {
-    STATE_ROTATING = 0,
-    STATE_DRIVE,
-    STATE_NEW_POINT,
-    AT_DEPOT
+    STATE_GOING_TO_POINT = 0,
+    STATE_NEW_POINT = 1,
+    AT_DEPOT = 2,
   };
-
 private:
 
    /* Pointer to the differential steering actuator */
@@ -182,8 +182,6 @@ private:
 
    double wheelbase = 0.14;
 
-   CVector3 pos;
-
    double dist_err = 0.;
    double angle_err = 0.;
    double prev_angle_err = 0.;
@@ -206,6 +204,12 @@ private:
    double df = 10.;
    double d_min = 0.05;
    double d_max = 0.125;
+
+   bool finished_drive = false;
+   bool finished_first_rot = false;
+   bool finished_second_rot = false;
+
+   int path_length = 0;
 
 };
 

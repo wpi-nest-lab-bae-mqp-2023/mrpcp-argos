@@ -5,6 +5,8 @@
 /* 2D vector definition */
 #include <argos3/core/utility/math/vector2.h>
 
+#include <argos3/core/utility/logging/argos_log.h>
+
 #include <sstream>
 #include <list>
 #include <utility>
@@ -93,7 +95,7 @@ void CFootBotCollisionHandling::Init(TConfigurationNode& t_node) {
 }
 
 void CFootBotCollisionHandling::Reset(){
-    m_eState = STATE_ROTATING;
+    m_eState = STATE_GOING_TO_POINT;
 
     c = 0;
     subtour_idc = 0;
@@ -127,64 +129,102 @@ void CFootBotCollisionHandling::ControlStep() {
 
     if(path_arr.empty()){ return; }
 
-//    if (id == 0) { return; }
-
     switch(m_eState) {
-     case STATE_ROTATING: {
-       //if not rotating to depot
-         Rotate();
-       //if rotating to depot
+      case STATE_GOING_TO_POINT: {
+        if(path_arr[c][0][0] == depot_x && path_arr[c][0][1] == depot_y){
+          RotateDriveRotate(true);
+        }
+        else{
+          RotateDriveRotate(false);
+        }
 
-         break;
-     }
-     case STATE_DRIVE: {
-
-         Drive();
-
-         break;
-     }
-     case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
-       c += 1;
-       if(c==path_arr[subtour_idc].size()){
-         c = 0;
-         subtour_idc += 1;
-         if(subtour_idc==path_arr.size()){
-             subtour_idc = 0;
-         }
-       }
-       goal_pos.SetX(path_arr[subtour_idc][c][0]);
-       goal_pos.SetY(path_arr[subtour_idc][c][1]);
-       std::cout << "New Point:" << goal_pos.GetX() << "," << goal_pos.GetY() << std::endl;
-
-       m_eState = STATE_ROTATING;
        break;
-     }
-     case AT_DEPOT: {
-       Circle(0.5);
-       break;
-     }
-     default: {
-         std::cout << "We can't be here, there's a bug!" << std::endl;
-     }
-  }
+      }
+      case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
+        c += 1;
+        if(c==path_length){
+          c = 0;
+        }
+        //LOGERR << "new point:" << path_arr[c][0] << "," << path_arr[c][1] << std::endl;
+
+        m_eState = STATE_GOING_TO_POINT;
+        break;
+      }
+      case AT_DEPOT: {
+        Circle(0.5);
+        break;
+      }
+      default: {
+         LOGERR << "We can't be here, there's a bug!" << std::endl;
+      }
+   }
+
     prev_pos = curr_pos;
     prev_pos_filled = true;
 }
 
+void CFootBotCollisionHandling::RotateDriveRotate(bool goingToDepot){
+  if(finished_first_rot == false){
+    finished_first_rot = Rotate();
+  }
+  else{ //when finished rotating, drive to desired position
+    double dist;
+      if(goingToDepot == true){
+        //goal_pos.SetX()
+        //goal_pos.SetY()
+        //dist = sqrt(pow(x,2)+pow(y,2))-0.5;
+      }
+      else{
+        //goal_pos.SetX()
+        //goal_pos.SetY()
+        //dist = sqrt(pow(x,2)+pow(y,2));
+      }
+
+      if(finished_drive == false){
+        finished_drive = Drive();
+        ogYaw.SetValue(yaw.GetValue() - 1.5708);
+      }
+      else{ //when finished driving, rotate to desired angle
+        if(goingToDepot && finished_second_rot == false){
+          if(goingToDepot == true){
+            finished_second_rot = RotateToCircle(ogYaw, yaw);
+          }
+          else{
+            finished_second_rot = Rotate();
+          }
+        }
+        else {
+          finished_drive = false;
+          finished_first_rot = false;
+          finished_second_rot = false;
+
+          if(goingToDepot){
+            m_eState = AT_DEPOT;
+          }
+          else{
+            m_eState = STATE_NEW_POINT;
+          }
+        }
+      }
+  }
+
+}
+
 //rotates to a set (x, y) position. yaw is the current orientation
-void CFootBotCollisionHandling::Rotate(){
+bool CFootBotCollisionHandling::Rotate(){
     if(abs(angle_err) > 0.02){
         double omega_eff = theta_ctrl.computeEffort(angle_err);
         ApplyTwist(0., omega_eff);
+        return false;
     }
     else{
         ApplyTwist(0., 0.);
-        m_eState = STATE_DRIVE;
+        return true;
     }
 }
 
 //drives a certain distance
-void CFootBotCollisionHandling::Drive(){
+bool CFootBotCollisionHandling::Drive(){
   if(wait == true){
     m_pcWheels->SetLinearVelocity(0, 0);
   }
@@ -196,9 +236,9 @@ void CFootBotCollisionHandling::Drive(){
         }
         else{
           ApplyTwist(0., 0.);
-          m_eState = STATE_NEW_POINT;
+          return true;
         }
-        return;
+        return false;
     }
 
     // If not, drive there
@@ -283,7 +323,7 @@ void CFootBotCollisionHandling::Circle(double radius){
   }
 
   //if done circling
-  if(((depot_x+0.5)-pos[0] < 0.06 && (depot_x+0.5)-pos[0] > -0.06 && depot_y-pos[1] < 0.06 && depot_y-pos[1] > -0.06)){
+  if(((depot_x+0.5)-curr_pos[0] < 0.06 && (depot_x+0.5)-curr_pos[0] > -0.06 && depot_y-curr_pos[1] < 0.06 && depot_y-curr_pos[1] > -0.06)){
     m_eState = STATE_NEW_POINT;
   }
 

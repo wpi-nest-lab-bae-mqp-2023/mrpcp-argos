@@ -99,6 +99,7 @@ public:
 
    double path_arr[50][2];
    CVector2 robot_posn[2];
+
    bool wait;
 
    enum EState {
@@ -162,9 +163,6 @@ private:
    int robot_count = 0;
    int curr_robot = 0;
 
-   bool finished_drive = false;
-   bool finished_first_rot = false;
-   bool finished_second_rot = false;
    CRadians ogYaw;
 
    double depot[2] = {-1, -1};
@@ -180,6 +178,10 @@ private:
    int countinstr = 0;
    int c = 0;
    int path_length = 0;
+
+   bool finished_drive = false;
+   bool finished_first_rot = false;
+   bool finished_second_rot = false;
 
    std::string path;
    double pi = 3.1415926;
