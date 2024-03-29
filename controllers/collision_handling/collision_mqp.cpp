@@ -138,7 +138,9 @@ void CFootBotCollisionHandling::ControlStep() {
          break;
      }
      case STATE_DRIVE: {
+
          Drive();
+
          break;
      }
      case STATE_NEW_POINT: { //gets a new point from the .argos file -- currently set to just rotate through infinitely
@@ -191,7 +193,6 @@ void CFootBotCollisionHandling::Drive(){
     if(dist_err < 0.05){
         if(goal_pos.GetX() == depot_x && goal_pos.GetY() == depot_y){
           RotateToCircle(ogYaw, yaw);
-          LOGERR << "rotating to circle!"
         }
         else{
           ApplyTwist(0., 0.);
@@ -247,13 +248,13 @@ void CFootBotCollisionHandling::ApplyTwist(double v_eff, double omega_eff) {
     m_pcWheels->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
 }
 
-bool CFootBotMQP2::RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw){
-    angleerr =  desiredAngle.GetValue() - yaw.GetValue();
-    while(angleerr >= pi){
-      angleerr -= 2*pi;
+bool CFootBotCollisionHandling::RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw){
+    angleerr = desiredAngle.GetValue() - yaw.GetValue();
+    while(angleerr >= M_PI){
+      angleerr -= 2*M_PI;
     }
-    while(angleerr <= -pi){
-      angleerr += 2*pi;
+    while(angleerr <= -M_PI){
+      angleerr += 2*M_PI;
     }
 
     if(abs(angleerr) > 0.02){
@@ -273,18 +274,19 @@ bool CFootBotMQP2::RotateToCircle(argos::CRadians desiredAngle, argos::CRadians 
     return false;
 }
 
-void CFootBotMQP2::Circle(double radius){
+void CFootBotCollisionHandling::Circle(double radius){
   if(wait == true){
     m_pcWheels->SetLinearVelocity(0,0);
   }
   else{
-    m_pcWheels->SetLinearVelocity(3*m_fWheelVelocity*(radius - wheelbase/2), 3*m_fWheelVelocity*(radius + wheelbase/2));
+    m_pcWheels->SetLinearVelocity(3*maximum_speed*(radius - wheelbase/2), 3*maximum_speed*(radius + wheelbase/2));
   }
 
   //if done circling
-  if(((depot_x+0.5)-pos[0] < 0.06 && (depot_x+0.5)-pos[0] > -0.06 && depot_y-pos[1] < 0.06 && depot_y-pos[1] > -0.06){
+  if(((depot_x+0.5)-pos[0] < 0.06 && (depot_x+0.5)-pos[0] > -0.06 && depot_y-pos[1] < 0.06 && depot_y-pos[1] > -0.06)){
     m_eState = STATE_NEW_POINT;
   }
+
 }
 
 /****************************************/

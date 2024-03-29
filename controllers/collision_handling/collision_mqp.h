@@ -98,6 +98,10 @@ public:
 
    virtual void Drive();
 
+   bool RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw);
+
+   void Circle(double radius);
+
    virtual void ApplyTwist(double v_eff, double omega_eff);
 
    std::vector<std::vector<std::vector<float>>> path_arr;
@@ -128,6 +132,7 @@ private:
 
    CCI_PositioningSensor* m_pcPosSens;
 
+   CRadians ogYaw;
 
    std::string m_strOutput;
    std::ofstream m_cOutput;
@@ -175,13 +180,25 @@ private:
 
    double ideal_speed;
 
-    double dist_err = 0.;
-    double angle_err = 0.;
-    double prev_angle_err = 0.;
+   double wheelbase = 0.14;
+
+   CVector3 pos;
+
+   double dist_err = 0.;
+   double angle_err = 0.;
+   double prev_angle_err = 0.;
 
    int c = 0;
    int subtour_idc = 0;
    EState m_eState;
+
+   double kp = 5;
+   double kd = 1;
+   double minimum_speed = 4;
+   double maximum_speed = 0;
+
+   double angleerr = 0;
+   double prevangleerr = 0;
 
    PIDController vel_ctrl;
    PIDController theta_ctrl;
