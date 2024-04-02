@@ -88,6 +88,7 @@ void CTrajectoryQTUserFunctions::drawPath(std::vector<std::vector<std::vector<st
             for (int pointi = 0; pointi < subtouri.size(); ++pointi) {
                 int pointj = pointi + 1;
                 if (pointj == subtouri.size()) { pointj = 0; }
+                DrawCircle(CVector3(subtouri[pointi][0], subtouri[pointi][1], 0.01), CQuaternion(), 0.05);
                 DrawRay(CRay3(CVector3(subtouri[pointi][0], subtouri[pointi][1], 0.01),
                               CVector3(subtouri[pointj][0], subtouri[pointj][1], 0.01)),
                         color, ki);
