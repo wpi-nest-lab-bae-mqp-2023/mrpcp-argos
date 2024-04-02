@@ -13,7 +13,7 @@ void CKheperaIVORCA::Init(TConfigurationNode& t_node) {
 }
 
 void CKheperaIVORCA::ControlStep() {
-
+    std::cout << "New Point:" << curr_pos.GetX() << "," << curr_pos.GetY() << std::endl;
 }
 
 
