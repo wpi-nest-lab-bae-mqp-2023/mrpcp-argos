@@ -98,7 +98,9 @@ public:
 
    bool Drive();
 
-   void RotateDriveRotate(bool goingToDepot);
+   bool DriveSimple(double distance);
+
+   void RotateDriveRotate(bool goingToDepot, double radius);
 
    bool RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw);
 
@@ -122,6 +124,7 @@ private:
     STATE_GOING_TO_POINT = 0,
     STATE_NEW_POINT = 1,
     AT_DEPOT = 2,
+    GOING_TO_DEPOT = 3,
   };
 private:
 
@@ -192,8 +195,10 @@ private:
 
    double kp = 5;
    double kd = 1;
-   double minimum_speed = 4;
-   double maximum_speed = 0;
+   double minimum_speed = 0;
+   double maximum_speed = 4;
+
+   Real m_fWheelVelocity;
 
    double angleerr = 0;
    double prevangleerr = 0;

@@ -72,7 +72,7 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
           cKheperaIVs.push_back(new CKheperaIVEntity(
                   fmt::format("ch-{}", robot_id),
                   "ch",
-                  CVector3(depot_x - i * delta, depot_y - j * delta, 0),
+                  CVector3(0.25 + depot_x - i * delta, 0.25 + depot_y - j * delta, 0),
                   random_quat));
           AddEntity(*cKheperaIVs[robot_id]);
 
@@ -150,7 +150,7 @@ void CollisionHandlingLoop::PreStep() {
 
            double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
 
-           if(diffAngle < 0.5 && diffAngle > -0.5 && distance < 0.2 && distance > -0.2){
+           if(diffAngle < 0.5 && diffAngle > -0.5 && distance < 0.5 && distance > -0.5){
              cController.wait = true;
            }
            //}
