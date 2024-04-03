@@ -18,12 +18,15 @@
       <!-- Actuators -->
       <actuators>
         <differential_steering implementation="default" />
+        <range_and_bearing implementation="default" />
       </actuators>
 
       <!-- Sensors -->
       <sensors>
-<!--        <kheperaiv_proximity implementation="default" show_rays="true" />-->
+        <kheperaiv_proximity implementation="default" show_rays="true" />
         <positioning implementation="default" />
+        <range_and_bearing implementation="medium" medium="rab"/>
+        <differential_steering implementation="default" />
       </sensors>
 
       <!-- Params -->
@@ -61,13 +64,17 @@
   <!-- ********* -->
   <!-- * Media * -->
   <!-- ********* -->
-  <media />
+  <media>
+    <range_and_bearing id="rab" check_occlusions="false" />
+  </media>
 
   <!-- ****************** -->
   <!-- * Visualization * -->
   <!-- ****************** -->
   <visualization>
     <qt-opengl>
+      <user_functions library="build/loop_functions/kheperaiv_orca_loop/libkheperaiv_orca_loop"
+                      label="id_qtuser_functions" />
       <camera>
         <placements>
           <placement index="0" position="0,0,8.14689" look_at="0,0,0" up="1,0,0" lens_focal_length="50" />
