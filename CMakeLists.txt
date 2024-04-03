@@ -21,7 +21,7 @@ set(CMAKE_MACOSX_RPATH 0)
 # Set the path where CMake will find additional scripts
 set(CMAKE_MODULE_PATH $ENV{CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_PREFIX_PATH $ENV{CMAKE_PREFIX_PATH} ${CMAKE_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/.cget)
-#set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/.cget/cget/cget.cmake)
+set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/.cget/cget/cget.cmake)
 
 # Use C++17
 set(CMAKE_CXX_STANDARD 17)
@@ -39,9 +39,6 @@ link_libraries(${ARGOS_LDFLAGS})
 #if(GALIB_FOUND)
 #  include_directories(${GALIB_INCLUDE_DIRS})
 #endif(GALIB_FOUND)
-
-set(CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_SOURCE_DIR}/.cget/cget/cget.cmake)
-set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/.cget)
 
 # Descend into the controllers directory
 add_subdirectory(controllers)

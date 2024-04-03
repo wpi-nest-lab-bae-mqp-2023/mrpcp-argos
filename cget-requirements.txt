@@ -1,2 +1,3 @@
 nlohmann/json
 fmtlib/fmt
+rvo:https://github.com/snape/RVO2/archive/refs/tags/v2.0.2.tar.gz
