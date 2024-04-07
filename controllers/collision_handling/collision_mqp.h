@@ -100,7 +100,7 @@ public:
 
    bool DriveSimple(double distance);
 
-   void RotateDriveRotate(bool goingToDepot, double radius);
+   void RotateDriveRotate(bool goingToDepot);
 
    bool RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw);
 
@@ -109,10 +109,16 @@ public:
    virtual void ApplyTwist(double v_eff, double omega_eff);
 
    std::vector<std::vector<std::vector<float>>> path_arr;
+
    virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
+
+   float depot_arr[4][2] = {{-1.25, -1.25}, {-.75, -1.25}, {-1.25, -0.75}, {-0.75, -0.75}};
+
+   int stepsInWorld = 0;
 
    unsigned long id;
    bool wait;
+   bool backUp;
 
    double depot_x;
    double depot_y;
@@ -170,6 +176,7 @@ private:
    bool prev_pos_filled = false;
    CVector3 curr_vel;
    CVector3 goal_pos;
+   CVector3 ogPos;
    CQuaternion quat;
    CRadians yaw, temp1, temp2;
 
@@ -181,6 +188,7 @@ private:
    double theta_ki;
    double theta_kd;
 
+   double theta;
    double ideal_speed;
 
    double wheelbase = 0.14;
@@ -200,6 +208,7 @@ private:
 
    Real m_fWheelVelocity;
 
+   double wait_counter = 0;
    double angleerr = 0;
    double prevangleerr = 0;
 
@@ -213,8 +222,7 @@ private:
    bool finished_drive = false;
    bool finished_first_rot = false;
    bool finished_second_rot = false;
-
-   int path_length = 0;
+   bool finished_third_rot = false;
 
 };
 

@@ -19,6 +19,7 @@ CFootBotCollisionHandling::CFootBotCollisionHandling() :
    m_fDelta(0.5f),
    maxRobotVelocity(2.5),
    maxRobotOmega(10.),
+   m_fWheelVelocity(2.5f),
    vel_kp(1.),
    vel_ki(0.),
    vel_kd(0.),
@@ -99,6 +100,7 @@ void CFootBotCollisionHandling::Reset(){
 
     c = 0;
     subtour_idc = 0;
+
     if(path_arr.empty()){ return; }
     goal_pos.SetX(path_arr[subtour_idc][c][0]);
     goal_pos.SetY(path_arr[subtour_idc][c][1]);
@@ -130,13 +132,14 @@ void CFootBotCollisionHandling::ControlStep() {
 
     switch(m_eState) {
       case STATE_GOING_TO_POINT: {
-        RotateDriveRotate(false, 0);
+        RotateDriveRotate(false);
        break;
       }
       case GOING_TO_DEPOT: {
-        goal_pos.SetX(depot_x-0.25);
-        goal_pos.SetY(depot_y-0.25);
-        RotateDriveRotate(true, 0.5);
+        goal_pos.SetX(depot_x-0.5);
+        goal_pos.SetY(depot_y-0.5);
+
+        RotateDriveRotate(true);
 
         break;
       }
@@ -149,6 +152,21 @@ void CFootBotCollisionHandling::ControlStep() {
               subtour_idc = 0;
           }
         }
+
+
+        if(goal_pos.GetX() == depot_x-0.5 && goal_pos.GetY() == depot_y-0.5){
+          goal_pos.SetX(depot_x);
+          goal_pos.SetY(depot_y);
+        }
+
+        while(goal_pos.GetX() == path_arr[subtour_idc][c][0] && goal_pos.GetY() == path_arr[subtour_idc][c][1]){
+          c += 1;
+          if(c==path_arr[subtour_idc].size()){
+            c = 0;
+          }
+        }
+
+
         goal_pos.SetX(path_arr[subtour_idc][c][0]);
         goal_pos.SetY(path_arr[subtour_idc][c][1]);
 
@@ -173,43 +191,52 @@ void CFootBotCollisionHandling::ControlStep() {
     prev_pos_filled = true;
 }
 
-void CFootBotCollisionHandling::RotateDriveRotate(bool goingToDepot, double radius){
-  //double x = 1;
-  //double y = 1;
-  double dist = 1;
+void CFootBotCollisionHandling::RotateDriveRotate(bool goingToDepot){
   if(finished_first_rot == false){
     finished_first_rot = Rotate();
   }
   else{ //when finished rotating, drive to desired position
-      if(finished_drive == false && dist > 0.04){
-        if(goingToDepot == true){
-          dist = sqrt(pow(goal_pos.GetX()-curr_pos.GetX(),2)+pow(goal_pos.GetY()-curr_pos.GetY(),2))-radius;
-          finished_drive = DriveSimple(dist);
-          ogYaw.SetValue(yaw.GetValue() - 1.5708);
-        }
-        else{
-          finished_drive = Drive();
-        }
+      if(finished_drive == false){
+        finished_drive = Drive();
       }
       else{ //when finished driving, rotate to desired angle
         if(goingToDepot && finished_second_rot == false){
           if(goingToDepot == true){
-            finished_second_rot = RotateToCircle(ogYaw, yaw);
+
+            //just making sure that the robot is aligned correctly to rotate
+            goal_pos.SetX(depot_x-1);
+            goal_pos.SetY(depot_y-1);
+
+            angle_err = atan2(goal_pos.GetY() - curr_pos.GetY(), goal_pos.GetX() - curr_pos.GetX()) - yaw.GetValue();
+
+            if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
+            if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
+
+
+            finished_second_rot = Rotate();
           }
           else{
             finished_second_rot = Rotate();
           }
         }
         else {
-          finished_drive = false;
-          finished_first_rot = false;
-          finished_second_rot = false;
-
-          if(goingToDepot){
-            m_eState = AT_DEPOT;
+          if(goingToDepot && finished_third_rot == false){
+            finished_third_rot = RotateToCircle(ogYaw, yaw);
           }
           else{
-            m_eState = STATE_NEW_POINT;
+            finished_drive = false;
+            finished_first_rot = false;
+            finished_second_rot = false;
+            finished_third_rot = false;
+
+            if(goingToDepot){
+              ogPos.SetX(curr_pos.GetX());
+              ogPos.SetY(curr_pos.GetY());
+              m_eState = AT_DEPOT;
+            }
+            else{
+              m_eState = STATE_NEW_POINT;
+            }
           }
         }
       }
@@ -225,19 +252,51 @@ bool CFootBotCollisionHandling::Rotate(){
     }
     else{
         ApplyTwist(0., 0.);
+        ogYaw.SetValue(yaw.GetValue() - 1.5708);
         return true;
     }
 }
 
+bool CFootBotCollisionHandling::RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw){
+    angleerr = desiredAngle.GetValue() - yaw.GetValue();
+    while(angleerr >= M_PI){
+      angleerr -= 2*M_PI;
+    }
+    while(angleerr <= -M_PI){
+      angleerr += 2*M_PI;
+    }
+
+    if(abs(angleerr) > 0.02){
+      ideal_speed = std::max(std::min(minimum_speed,abs(kp*angleerr - kd*prevangleerr)), maximum_speed);
+      if(angleerr<0){
+        m_pcWheels->SetLinearVelocity(ideal_speed, -ideal_speed);
+      }
+      else{
+        m_pcWheels->SetLinearVelocity(-ideal_speed, ideal_speed);
+      }
+      prevangleerr = angleerr;
+    }
+    else{
+      m_pcWheels->SetLinearVelocity(0, 0);
+      return true;
+    }
+    return false;
+}
+
 //drives a certain distance
 bool CFootBotCollisionHandling::Drive(){
-  if(wait == true){
+
+  if(wait == true && wait_counter < 100){
     m_pcWheels->SetLinearVelocity(0, 0);
+
+    wait_counter += 1;
+
   }
   else{
     // If there, get new point
     if(dist_err < 0.05){
       ApplyTwist(0., 0.);
+      wait_counter = 0;
       return true;
     }
 
@@ -278,70 +337,41 @@ bool CFootBotCollisionHandling::Drive(){
       double vel_eff = vel_ctrl.computeEffort(v_err);
 
       ApplyTwist(vel_eff, omega_eff);
-
-      ogYaw.SetValue(yaw.GetValue() - 1.5708);
     }
   }
   return false;
+}
+
+//rotates around a point of specified radius
+void CFootBotCollisionHandling::Circle(double radius){
+  if(wait == true){
+    m_pcWheels->SetLinearVelocity(0,0);
+  }
+  else{
+    m_pcWheels->SetLinearVelocity(3*m_fWheelVelocity*(radius - wheelbase/2), 3*m_fWheelVelocity*(radius + wheelbase/2));
+  }
+
+  theta += 1;
+
+  //if done circling
+  if(abs(ogPos.GetX()-curr_pos[0]) < 0.06 && abs(ogPos.GetY()-curr_pos[1]) < 0.06 && theta > 50){
+    if(curr_pos.GetX()-depot_x > 0.06 && curr_pos.GetY()-depot_y > 0.06){
+      goal_pos.SetX(depot_x);
+      goal_pos.SetY(depot_y);
+
+      RotateDriveRotate(false);
+    }
+    else{
+      theta = 0;
+      m_eState = STATE_NEW_POINT;
+    }
+  }
 }
 
 void CFootBotCollisionHandling::ApplyTwist(double v_eff, double omega_eff) {
     double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
     double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
     m_pcWheels->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
-}
-
-bool CFootBotCollisionHandling::RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw){
-    angleerr = desiredAngle.GetValue() - yaw.GetValue();
-    while(angleerr >= M_PI){
-      angleerr -= 2*M_PI;
-    }
-    while(angleerr <= -M_PI){
-      angleerr += 2*M_PI;
-    }
-
-    if(abs(angleerr) > 0.02){
-      ideal_speed = std::max(std::min(minimum_speed,abs(kp*angleerr - kd*prevangleerr)), maximum_speed);
-      if(angleerr<0){
-        m_pcWheels->SetLinearVelocity(ideal_speed, -ideal_speed);
-      }
-      else{
-        m_pcWheels->SetLinearVelocity(-ideal_speed, ideal_speed);
-      }
-      prevangleerr = angleerr;
-    }
-    else{
-      m_pcWheels->SetLinearVelocity(0, 0);
-      return true;
-    }
-    return false;
-}
-
-void CFootBotCollisionHandling::Circle(double radius){
-  if(wait == true){
-    m_pcWheels->SetLinearVelocity(0,0);
-  }
-  else{
-    m_pcWheels->SetLinearVelocity(3*maximum_speed*(radius - wheelbase/2), 3*maximum_speed*(radius + wheelbase/2));
-  }
-  //if done circling
-  if(abs(radius+goal_pos.GetX()-curr_pos[0]) < 0.06 && abs(goal_pos.GetY()-curr_pos[1]) < 0.06){
-    m_eState = STATE_NEW_POINT;
-  }
-
-}
-bool CFootBotCollisionHandling::DriveSimple(double distance){
-    if(wait == false && (distance > 0.05 || distance < -0.05)){
-      m_pcWheels->SetLinearVelocity(maximum_speed, maximum_speed);
-    }
-    else if(wait == true){
-      m_pcWheels->SetLinearVelocity(0, 0);
-    }
-    else {
-      m_pcWheels->SetLinearVelocity(0, 0);
-      return true;
-    }
-    return false;
 }
 /****************************************/
 /****************************************/

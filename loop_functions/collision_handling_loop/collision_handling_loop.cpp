@@ -24,19 +24,21 @@ CollisionHandlingLoop::~CollisionHandlingLoop() {
 void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
   std::cout << "Setting up in get_initial_solution_mqp.cpp" << std::endl;
 
-  std::string host; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
-  int k = 0; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
   if (k <= 0) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (k<=0): Select k > 0."); }
-  float nk = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "nk", nk, nk);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "nk", nk, nk);
   if (nk <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (nk<=0): Select nk > 0."); }
-  float fcr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
   if (fcr <= 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fcr<=1): Select fcr > 1."); }
-  float fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
   if (fr < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr<0): Select fr >= 0."); }
-  float ssd = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
   if (ssd <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (ssd<=0): Select ssd > 0."); }
-  std::string mode; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
   if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
+
+  original_k = k;
 
   std::cout << "Problem Specification Parameters:" << std::endl;
   std::cout << "\thost (problem solver server host): " << host << std::endl;
@@ -52,13 +54,13 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
 
 //    unsigned long num_of_robots = 3;
   num_of_robots = path_arr.size();
-  unsigned long num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots / 2.));
+  unsigned long num_of_robots_per_side = num_of_robots;
 
   CQuaternion random_quat;
   auto m_pcRNG = CRandom::CreateRNG("argos");
 
-  double depot_x = path_arr[0][0][0][0];
-  double depot_y = path_arr[0][0][0][1];
+  double d_x = path_arr[0][0][0][0];
+  double d_y = path_arr[0][0][0][1];
   double delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
 
   for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
@@ -72,7 +74,7 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
           cKheperaIVs.push_back(new CKheperaIVEntity(
                   fmt::format("ch-{}", robot_id),
                   "ch",
-                  CVector3(0.25 + depot_x - i * delta, 0.25 + depot_y - j * delta, 0),
+                  CVector3(d_x - i+j * delta, -1.7, 0),
                   random_quat));
           AddEntity(*cKheperaIVs[robot_id]);
 
@@ -80,8 +82,10 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
           cController.id = robot_id;
           cController.SetPath(path_arr[robot_id]);
 
-          cController.depot_x = depot_x;
-          cController.depot_y = depot_y;
+          cController.depot_x = d_x;
+          cController.depot_y = d_y;
+
+          //cController.depot_arr = depot_arr;
       }
   }
 
@@ -138,9 +142,9 @@ void CollisionHandlingLoop::PreStep() {
 
        for(int j = 0; j < num_of_robots; j++){
          if(cPos != robot_posn[j]){
-           //cController.wait = false;
 
            double diffAngle = cZAngle.GetValue() - atan2(robot_posn[j].GetY() - cPos.GetY(), robot_posn[j].GetX() - cPos.GetX());
+
            while(diffAngle >= pi){
              diffAngle -= 2*pi;
            }
@@ -150,15 +154,71 @@ void CollisionHandlingLoop::PreStep() {
 
            double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
 
-           if(diffAngle < 0.5 && diffAngle > -0.5 && distance < 0.5 && distance > -0.5){
+           //if(abs(cPos.GetX() - (depot_x - 0.5)) < 2 && abs(cPos.GetY() - (depot_y - 0.5)) < 2){
+            if(abs(diffAngle) < 0.6 && abs(distance) < 0.4){
              cController.wait = true;
+            }
            }
-           //}
-         }
+         //}
        }
+       cController.stepsInWorld += 1;
    }
 
+   x += 1;
+
+
+   unsigned long robot_id = 0;
+   unsigned long new_robot_id = 5;
+
+   if(x > (rand() % 10000) && onlyOneFailure != 1){ //failure happens
+     onlyOneFailure = 1;
+     LOGERR << "Failure happens" << std::endl;
+     k = k-1;
+
+     RemoveEntity("ch-"+std::to_string(rand() % num_of_robots));
+
+     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, "h2"); //convert to recalculate
+   }
+
+   /*
+   if(x % 200 == 0){ //failure happens
+     LOGERR << "Failure happens" << std::endl;
+     k = k+1;
+
+     CQuaternion quat;
+     quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
+
+     failedKheperaIVs.push_back(new CKheperaIVEntity(
+         fmt::format("ch-{}", new_robot_id),
+         "ch",
+         CVector3(depot_x, depot_y, 0), quat));
+
+     AddEntity(*failedKheperaIVs[new_robot_id]);
+
+     auto &cController = dynamic_cast<CFootBotCollisionHandling &>(failedKheperaIVs[new_robot_id]->GetControllableEntity().GetController());
+     cController.id = new_robot_id;
+     cController.SetPath(path_arr[new_robot_id]);
+
+     cController.depot_x = depot_x;
+     cController.depot_y = depot_y;
+
+     LOGERR << path_arr.size() << std::endl;
+     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, "h2"); //convert to recalculate
+     LOGERR << path_arr.size() << std::endl;
+
+   }*/
+
+
 }
+
+//sending rq to recalculate function
+//mark when MILP is being used, and when heuristic is being used, show on % coverage
+//mark when robots fail on %coverage
+
+//milp_paths
+//heuristic
+//milp_paths
+
 /****************************************/
 /****************************************/
 

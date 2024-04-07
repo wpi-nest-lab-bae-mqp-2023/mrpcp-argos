@@ -29,7 +29,25 @@ public:
 private:
   std::vector<std::vector<std::vector<std::vector<float>>>> path_arr;
   std::vector<CKheperaIVEntity*> cKheperaIVs;
+  std::vector<CKheperaIVEntity*> failedKheperaIVs;
 
   unsigned long num_of_robots;
+  double depot_x;
+  double depot_y;
 
+  float lambda = 0.5;
+
+  int original_k = 0;
+
+  //problem parameters
+  int x = 0;
+  std::string host;
+  int k = 0;
+  float nk = 0.;
+  float fcr = 0.;
+  float fr = 0.;
+  float ssd = 0.;
+  std::string mode;
+
+  double onlyOneFailure = 0;
 };
