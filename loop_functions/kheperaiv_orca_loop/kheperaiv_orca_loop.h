@@ -10,6 +10,8 @@
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
 #include <fmt/core.h>
 
+#include <controllers/kheperaiv_orca/kheperaiv_orca.h>
+
 /*
  * All the ARGoS stuff in the 'argos' namespace.
  * With this statement, you save typing argos:: every time.
@@ -27,7 +29,6 @@ public:
 
     virtual void Init(TConfigurationNode& t_node);
 
-private:
     std::vector<CKheperaIVEntity*> cKheperaIVs;
 
 };

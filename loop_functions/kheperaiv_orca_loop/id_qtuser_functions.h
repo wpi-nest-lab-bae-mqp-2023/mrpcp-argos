@@ -5,6 +5,7 @@
 #include <controllers/kheperaiv_orca/kheperaiv_orca.h>
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
 #include <argos3/core/simulator/loop_functions.h>
+#include "kheperaiv_orca_loop.h"
 
 using namespace argos;
 
@@ -16,7 +17,11 @@ public:
 
    virtual ~CIDQTUserFunctions() {}
 
-   void Draw(CKheperaIVEntity& c_entity);
+   void DrawID(CKheperaIVEntity& c_entity);
+
+    virtual void DrawInWorld();
+
+    CKheperaIVORCALoop& m_cKheperaIVORCALoop;
 
 };
 
