@@ -4,6 +4,8 @@
 #include <unistd.h>               // for linux
 #include <fmt/core.h>
 
+#include <argos3/core/utility/logging/argos_log.h>
+
 
 using json = nlohmann::json;
 
@@ -40,21 +42,56 @@ bool mqp_http_client::make_http_req(nlohmann::json *data, const std::string& req
 bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr,
                             std::string host,
                             int k,
-                            float nk,
+                            float n_a,
                             float fcr,
                             float fr,
                             float ssd,
-                            std::string mode) {
+                            std::string mode,
+                            int rp) {
 
-//    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
-    std::string req_url = fmt::format("{}/solve?k={}&nk={}&fcr={}&fr={}&ssd={}&mode={}",
+
+    std::string req_url = fmt::format("{}/solve?k={}&n_a={}&fcr={}&fr={}&ssd={}&mode={}&rp={}",
                                       host,
                                       k,
-                                      nk,
+                                      n_a,
                                       fcr,
                                       fr,
                                       ssd,
-                                      mode);
+                                      mode,
+                                      rp);
+
+
+    json data;
+    mqp_packets::res mqp_res;
+    while (true) {
+        make_http_req(&data, req_url);
+        if (data["status"] == "completed") { break; }
+        usleep(1000000);
+    }
+
+    *path_arr = data["robot_world_path"].get<std::vector<std::vector<std::vector<std::vector<float>>>>>();
+
+    return true;
+}
+
+bool mqp_http_client::recalculate(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr,
+                            std::string host,
+                            int curr_robots_pos,
+                            int curr_fuel_levels,
+                            int failed_robot_id) {
+
+    std::cout << "Calling the recalculate endpoint...\n" << std::endl;
+
+
+
+    std::string req_url = fmt::format("{}/recalculate?curr_robots_pos={}&curr_fuel_levels={}&failed_robot_id={}",
+                                      host,
+                                      curr_robots_pos,
+                                      curr_fuel_levels,
+                                      failed_robot_id
+                                    );
+
+
 
     json data;
     mqp_packets::res mqp_res;
@@ -69,6 +106,7 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<floa
 //    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
     return true;
 }
+
 
 void mqp_http_client::printPaths(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr) {
     for (int ki = 0; ki < path_arr.size(); ++ki) {
@@ -86,5 +124,3 @@ void mqp_http_client::printPath(std::vector<std::vector<std::vector<float>>> pat
         }
     }
 }
-
-

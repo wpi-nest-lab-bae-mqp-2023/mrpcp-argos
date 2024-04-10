@@ -1,6 +1,7 @@
 /* Include the controller definition */
 #include "collision_mqp.h"
 /* Function definitions for XML parsing */
+
 #include <argos3/core/utility/configuration/argos_configuration.h>
 /* 2D vector definition */
 #include <argos3/core/utility/math/vector2.h>
@@ -13,6 +14,7 @@
 
 
 CFootBotCollisionHandling::CFootBotCollisionHandling() :
+   m_pcRNG(NULL),
    m_pcWheels(NULL),
    m_pcPosSens(NULL),
    m_cAlpha(10.0f),
@@ -110,6 +112,10 @@ void CFootBotCollisionHandling::Reset(){
 
     prev_pos_filled = false;
     prev_pos = CVector3();
+
+    //m_pcRNG = argos::CRandom::CreateRNG(std::to_string(id));
+    m_pcRNG = argos::CRandom::CreateRNG("argos");
+    m_pcRNG->SetSeed(id);
 }
 
 /****************************************/
@@ -179,7 +185,7 @@ void CFootBotCollisionHandling::ControlStep() {
         break;
       }
       case AT_DEPOT: {
-        Circle(0.5);
+        Circle(0.75);
         break;
       }
       default: {
@@ -285,17 +291,23 @@ bool CFootBotCollisionHandling::RotateToCircle(argos::CRadians desiredAngle, arg
 
 //drives a certain distance
 bool CFootBotCollisionHandling::Drive(){
+  double wait = 150;
 
-  if(wait == true && wait_counter < 100){
+  if(wait == true && wait_counter < wait){
     m_pcWheels->SetLinearVelocity(0, 0);
 
     wait_counter += 1;
 
+    if(willCollide == true){
+      LOGERR << "will collide" << std::endl;
+        m_pcWheels->SetLinearVelocity(-3, 3);
+    }
   }
   else{
     // If there, get new point
     if(dist_err < 0.05){
       ApplyTwist(0., 0.);
+      perturbation_counter = 0;
       wait_counter = 0;
       return true;
     }
@@ -306,13 +318,20 @@ bool CFootBotCollisionHandling::Drive(){
       /* Calculate f_r (repulsive force) */
       CVector2 f_r;
       const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();
+
       for(size_t i = 0; i < tProxReads.size(); ++i) {
           f_r -= CVector2(tProxReads[i].Value, tProxReads[i].Angle);
       }
+
       f_r /= tProxReads.size();
       double d = KHEPERAIV_IR_SENSORS_RING_RANGE - f_r.Length();
 
-      if (f_r.Length() > 0.) { f_r.Normalize(); }
+      if (f_r.Length() > 0.) {
+        f_r.Normalize();
+        f_r.SetX(f_r.GetX() + m_pcRNG->Uniform(CRange(-0.1, 0.1)));
+        f_r.SetY(f_r.GetY() + m_pcRNG->Uniform(CRange(-0.1, 0.1)));
+      }
+
       f_r.Rotate(CRadians(yaw.GetValue()));
 
       /* Calculate f_a (attractive force) */

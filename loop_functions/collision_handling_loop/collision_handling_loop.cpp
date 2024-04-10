@@ -27,8 +27,8 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
   GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
   GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
   if (k <= 0) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (k<=0): Select k > 0."); }
-  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "nk", nk, nk);
-  if (nk <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (nk<=0): Select nk > 0."); }
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "n_a", n_a, n_a);
+  if (n_a <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (n_a<=0): Select n_a > 0."); }
   GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
   if (fcr <= 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fcr<=1): Select fcr > 1."); }
   GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
@@ -36,6 +36,9 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
   GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
   if (ssd <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (ssd<=0): Select ssd > 0."); }
   GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
+
+  GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "rp", rp, rp);
+
   if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
 
   original_k = k;
@@ -43,13 +46,13 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
   std::cout << "Problem Specification Parameters:" << std::endl;
   std::cout << "\thost (problem solver server host): " << host << std::endl;
   std::cout << "\tk (number of robots): " << k << std::endl;
-  std::cout << "\tnk (number of nodes in an axis per robot): " << nk << std::endl;
+  std::cout << "\tn_a (number of nodes in an axis per robot): " << n_a << std::endl;
   std::cout << "\tfcr (fuel-capacity-ratio relative to minimum needed): " << fcr << std::endl;
   std::cout << "\tfr (failure-ratio relative ...): " << fr << std::endl;
   std::cout << "\tssd (square-side-distance in meters): " << ssd << std::endl;
   std::cout << "Waiting on a solution..." << std::endl;
 
-  mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, mode);
+  mqp_http_client::solve(&path_arr, host, k, n_a, fcr, fr, ssd, mode, rp);
 //    mqp_http_client::printPaths(path_arr);
 
 //    unsigned long num_of_robots = 3;
@@ -68,15 +71,32 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
           unsigned long robot_id = i * num_of_robots_per_side + j;
           if (robot_id >= num_of_robots) { break; }
 
-          random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
+          random_quat.FromEulerAngles(CRadians(-M_PI), CRadians(0.), CRadians(0.));
 
           // Populate the robots array and configure the robot
+          /*
           cKheperaIVs.push_back(new CKheperaIVEntity(
                   fmt::format("ch-{}", robot_id),
                   "ch",
                   CVector3(d_x - i+j * delta, -1.7, 0),
+                  random_quat));*/
+
+
+          cKheperaIVs.push_back(new CKheperaIVEntity(
+                  fmt::format("ch-{}", robot_id),
+                  "ch",
+                  CVector3(3 - j * delta, -2 - i * delta, 0),
                   random_quat));
+
+          /*
+          cKheperaIVs.push_back(new CKheperaIVEntity(
+                  fmt::format("ch-{}", robot_id),
+                  "ch",
+                  CVector3(-1 - j * delta, -2 - i * delta, 0),
+                  random_quat));*/
+
           AddEntity(*cKheperaIVs[robot_id]);
+
 
           auto &cController = dynamic_cast<CFootBotCollisionHandling &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
           cController.id = robot_id;
@@ -132,7 +152,7 @@ void CollisionHandlingLoop::PreStep() {
       CFootBotCollisionHandling &cController = dynamic_cast<CFootBotCollisionHandling &>(cFootBot.GetControllableEntity().GetController());
 
       cController.wait = false;
-
+      cController.willCollide = false;
       CVector2 cPos;
       cPos.Set(cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
                cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
@@ -144,6 +164,7 @@ void CollisionHandlingLoop::PreStep() {
          if(cPos != robot_posn[j]){
 
            double diffAngle = cZAngle.GetValue() - atan2(robot_posn[j].GetY() - cPos.GetY(), robot_posn[j].GetX() - cPos.GetX());
+           double secondDiffAngle = robot_angle[j].GetValue() - atan2(cPos.GetY() - robot_posn[j].GetY(), cPos.GetX() - robot_posn[j].GetX());
 
            while(diffAngle >= pi){
              diffAngle -= 2*pi;
@@ -152,9 +173,19 @@ void CollisionHandlingLoop::PreStep() {
              diffAngle += 2*pi;
            }
 
-           double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
+           while(secondDiffAngle >= pi){
+             secondDiffAngle -= 2*pi;
+           }
+           while(secondDiffAngle <= -pi){
+             secondDiffAngle += 2*pi;
+           }
 
+           double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
            //if(abs(cPos.GetX() - (depot_x - 0.5)) < 2 && abs(cPos.GetY() - (depot_y - 0.5)) < 2){
+           if(abs(diffAngle-secondDiffAngle) < 0.1 && abs(distance) < 0.3){
+             cController.willCollide = true;
+           }
+
             if(abs(diffAngle) < 0.6 && abs(distance) < 0.4){
              cController.wait = true;
             }
@@ -170,14 +201,16 @@ void CollisionHandlingLoop::PreStep() {
    unsigned long robot_id = 0;
    unsigned long new_robot_id = 5;
 
-   if(x > (rand() % 10000) && onlyOneFailure != 1){ //failure happens
+   //if(x > (rand() % 10000) && onlyOneFailure != 1){ //failure happens
+
+   if(x > 100000 && onlyOneFailure != 1){ //failure happens
      onlyOneFailure = 1;
      LOGERR << "Failure happens" << std::endl;
      k = k-1;
 
      RemoveEntity("ch-"+std::to_string(rand() % num_of_robots));
 
-     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, "h2"); //convert to recalculate
+     mqp_http_client::solve(&path_arr, host, k, n_a, fcr, fr, ssd, "h2", rp); //convert to recalculate
    }
 
    /*
@@ -203,7 +236,7 @@ void CollisionHandlingLoop::PreStep() {
      cController.depot_y = depot_y;
 
      LOGERR << path_arr.size() << std::endl;
-     mqp_http_client::solve(&path_arr, host, k, nk, fcr, fr, ssd, "h2"); //convert to recalculate
+     mqp_http_client::solve(&path_arr, host, k, n_a, fcr, fr, ssd, "h2"); //convert to recalculate
      LOGERR << path_arr.size() << std::endl;
 
    }*/

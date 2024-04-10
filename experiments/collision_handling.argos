@@ -33,9 +33,10 @@
   </controllers>
 
 
-  <arena size="4.5, 4.5, 1" center="0,0,0.5">
+  <arena size="6, 6, 1" center="0,0,0.5">
 
     <!-- Place four boxes in a square to delimit the arena -->
+    <!--
     <box id="wall_left" size="3,0.1,0.5" movable="false">
       <body position="0,1.5,0" orientation="0,0,0" />
     </box>
@@ -47,7 +48,7 @@
     </box>
     <box id="wall_bottom" size="0.1,2.25,0.5" movable="false">
       <body position="-1.5,0.4,0" orientation="0,0,0" />
-    </box>
+    </box>-->
     <!--
     <box id="wall_left" size="3,0.1,0.5" movable="false">
       <body position="0,1.5,0" orientation="0,0,0" />
@@ -95,7 +96,7 @@
     <qt-opengl>
       <camera>
         <placements>
-          <placement index="0" position="0,0,8.14689" look_at="0,0,0" up="1,0,0" lens_focal_length="50" />
+          <placement index="0" position="0,0,12" look_at="0,0,0" up="1,0,0" lens_focal_length="50" />
         </placements>
       </camera>
     </qt-opengl>
@@ -105,14 +106,15 @@
           label="collision_handling_loop">
 
     <problem_params host="http://127.0.0.1:5000"
-                    k="5"
-                    nk="1"
+                    k="8"
+                    n_a="8"
                     fcr="2"
                     fr="10"
-                    ssd="2"
-                    mode="h1" />
+                    ssd="3"
+                    mode="h1"
+                    rp="2"/>
 
-    <arena_params initial-robot-spacing="0.4" />
+    <arena_params initial-robot-spacing="0.7" />
 
   </loop_functions>
 

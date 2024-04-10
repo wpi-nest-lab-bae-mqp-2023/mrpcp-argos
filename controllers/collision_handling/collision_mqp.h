@@ -33,6 +33,8 @@
 
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
 
+#include <argos3/core/utility/math/rng.h>
+
 #include <fstream>
 
 #include <cmath>
@@ -123,6 +125,8 @@ public:
    double depot_x;
    double depot_y;
 
+   bool willCollide = false;
+
 
 private:
   /* The three possible states in which the controller can be */
@@ -209,6 +213,9 @@ private:
    Real m_fWheelVelocity;
 
    double wait_counter = 0;
+   double perturbation_counter = 0;
+
+
    double angleerr = 0;
    double prevangleerr = 0;
 
@@ -223,6 +230,8 @@ private:
    bool finished_first_rot = false;
    bool finished_second_rot = false;
    bool finished_third_rot = false;
+
+   CRandom::CRNG *m_pcRNG;
 
 };
 

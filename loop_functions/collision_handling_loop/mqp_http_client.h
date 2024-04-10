@@ -22,11 +22,17 @@ public:
     static bool solve(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr,
                       std::string host,
                       int k,
-                      float nk,
+                      float n_a,
                       float fcr,
                       float fr,
                       float ssd,
-                      std::string mode);
+                      std::string mode,
+                      int rp);
+    static bool recalculate(std::vector<std::vector<std::vector<std::vector<float>>>> *path_arr,
+                                      std::string host,
+                                      int curr_robots_pos,
+                                      int curr_fuel_levels,
+                                      int failed_robot_id);
     static void printPaths(std::vector<std::vector<std::vector<std::vector<float>>>> path_arr);
     static void printPath(std::vector<std::vector<std::vector<float>>> path_arr);
 

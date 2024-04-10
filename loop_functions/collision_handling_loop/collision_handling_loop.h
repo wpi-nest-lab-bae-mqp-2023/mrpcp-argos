@@ -43,10 +43,11 @@ private:
   int x = 0;
   std::string host;
   int k = 0;
-  float nk = 0.;
+  float n_a = 0.;
   float fcr = 0.;
   float fr = 0.;
   float ssd = 0.;
+  int rp = 0;
   std::string mode;
 
   double onlyOneFailure = 0;
