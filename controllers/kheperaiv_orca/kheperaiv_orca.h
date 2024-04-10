@@ -21,6 +21,7 @@
 
 
 #include "RVO.h"
+#include "Filter.h"
 
 /*
  * All the ARGoS stuff in the 'argos' namespace.
@@ -53,39 +54,35 @@ public:
         bool hasFailed;
         double curr_pos_x;
         double curr_pos_y;
-        double curr_pos_h; // heading/yaw
-        double goal_pos_x;
-        double goal_pos_y;
+        double curr_vel_x;
+        double curr_vel_y;
     };
     class NORCAData {
     public:
         bool hasFailed;
         CVector2 curr_pos;
-        CRadians curr_pos_h;
-        CVector2 goal_pos;
-        NORCAData(): hasFailed(true), curr_pos(CVector2()), curr_pos_h(0.), goal_pos(CVector2()) {}
-        NORCAData(bool hasFailed, CVector2 curr_pos, CRadians curr_pos_h, CVector2 goal_pos) :
-            hasFailed(hasFailed), curr_pos(curr_pos), curr_pos_h(curr_pos_h), goal_pos(goal_pos) {}
+        CVector2 curr_vel;
+        NORCAData(): hasFailed(true), curr_pos(CVector2()), curr_vel(CVector2()) {}
+        NORCAData(bool hasFailed, CVector2 curr_pos, CVector2 curr_vel) :
+            hasFailed(hasFailed), curr_pos(curr_pos), curr_vel(curr_vel) {}
         explicit NORCAData(NORCADataBytes nVelVecBytes) {
             hasFailed = nVelVecBytes.hasFailed;
             curr_pos = CVector2(nVelVecBytes.curr_pos_x, nVelVecBytes.curr_pos_y);
-            curr_pos_h = CRadians(nVelVecBytes.curr_pos_h);
-            goal_pos = CVector2(nVelVecBytes.goal_pos_x, nVelVecBytes.goal_pos_y);
+            curr_vel = CVector2(nVelVecBytes.curr_vel_x, nVelVecBytes.curr_vel_y);
         }
         NORCADataBytes GetBytes() {
             return NORCADataBytes{
                     hasFailed,
                     curr_pos.GetX(),
                     curr_pos.GetY(),
-                    curr_pos_h.GetValue(),
-                    goal_pos.GetX(),
-                    goal_pos.GetY(),
+                    curr_vel.GetX(),
+                    curr_vel.GetY(),
             };
         }
         static RVO::Vector2 ARGOStoRVOVec(CVector2 arg_vec) { return {(float)arg_vec.GetX(), (float)arg_vec.GetY()}; }
         static CVector2 RVOtoARGOSVec(RVO::Vector2 rvo_vec) { return {(double)rvo_vec.x(), (double)rvo_vec.y()}; }
         RVO::Vector2 GetCurrPos(){ return ARGOStoRVOVec(curr_pos); }
-        RVO::Vector2 GetGoalPos(){ return ARGOStoRVOVec(goal_pos); }
+        RVO::Vector2 GetCurrVel(){ return ARGOStoRVOVec(curr_vel); }
     };
 //    std::vector<NORCAData> nORCADatas = std::vector<NORCAData>();
 
@@ -126,8 +123,11 @@ private:
     double theta_kd;
     PIDController vel_ctrl;
     PIDController theta_ctrl;
-
+    CVector2 CalculateEffort(CVector2 VelVec);
     virtual void ApplyTwist(double v_eff, double omega_eff);
+
+    AveragingFilter curr_vel_x_filter;
+    AveragingFilter curr_vel_y_filter;
 
 };
 
