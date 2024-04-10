@@ -16,8 +16,8 @@
  *    experiments/diffusion_10.argos
  */
 
-#ifndef FOOTBOT_DIFFUSION_H
-#define FOOTBOT_DIFFUSION_H
+#ifndef kheperaiv_XML_H
+#define kheperaiv_XML_H
 
 /*
  * Include some necessary headers.
@@ -27,9 +27,13 @@
 /* Definition of the differential steering actuator */
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 /* Definition of the foot-bot proximity sensor */
-#include <argos3/plugins/robots/foot-bot/control_interface/ci_footbot_proximity_sensor.h>
+#include <argos3/plugins/robots/kheperaiv/control_interface/ci_kheperaiv_proximity_sensor.h>
+
+#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_measures.h>
 
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
+
+#include <argos3/core/utility/math/rng.h>
 
 #include <fstream>
 
@@ -38,6 +42,10 @@
 #include <string>
 
 #include <sstream>
+
+#include "PIDController.h"
+
+
 /*
  * All the ARGoS stuff in the 'argos' namespace.
  * With this statement, you save typing argos:: every time.
@@ -47,20 +55,20 @@ using namespace argos;
 /*
  * A controller is simply an implementation of the CCI_Controller class.
  */
-class CFootBotMQP2 : public CCI_Controller {
+class CFootBotCollisionHandling : public CCI_Controller {
 
 public:
 
    /* Class constructor. */
-   CFootBotMQP2();
+   CFootBotCollisionHandling();
 
    /* Class destructor. */
-   virtual ~CFootBotMQP2() {}
+   virtual ~CFootBotCollisionHandling() {}
 
    /*
     * This function initializes the controller.
     * The 't_node' variable points to the <parameters> section in the XML
-    * file in the <controllers><footbot_diffusion_controller> section.
+    * file in the <controllers><kheperaiv_mqp_controller> section.
     */
    virtual void Init(TConfigurationNode& t_node);
 
@@ -88,47 +96,65 @@ public:
     */
    virtual void Destroy() {}
 
-   bool Rotate(double x, double y, argos::CRadians yaw);
+   bool Rotate();
+
+   bool Drive();
+
+   bool DriveSimple(double distance);
+
+   void RotateDriveRotate(bool goingToDepot);
+
    bool RotateToCircle(argos::CRadians desiredAngle, argos::CRadians yaw);
 
-   bool Drive(double distance);
+   void Circle(double radius);
 
-   virtual void RotateDriveRotate(double x, double y, argos::CRadians yaw, bool goingToDepot);
+   virtual void ApplyTwist(double v_eff, double omega_eff);
 
-   virtual void Circle(double radius);
+   std::vector<std::vector<std::vector<float>>> path_arr;
 
-   double path_arr[50][2];
-   CVector2 robot_posn[2];
+   virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
 
+   float depot_arr[4][2] = {{-1.25, -1.25}, {-.75, -1.25}, {-1.25, -0.75}, {-0.75, -0.75}};
+
+   int stepsInWorld = 0;
+
+   unsigned long id;
    bool wait;
+   bool backUp;
 
-   enum EState {
-     STATE_GOING_TO_POINT = 0,
-     STATE_NEW_POINT = 1,
-     AT_DEPOT = 2,
-   };
+   double depot_x;
+   double depot_y;
 
-   EState m_eState;
+   bool willCollide = false;
 
-   //virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
+
+private:
+  /* The three possible states in which the controller can be */
+  enum EState {
+    STATE_GOING_TO_POINT = 0,
+    STATE_NEW_POINT = 1,
+    AT_DEPOT = 2,
+    GOING_TO_DEPOT = 3,
+  };
 private:
 
    /* Pointer to the differential steering actuator */
    CCI_DifferentialSteeringActuator* m_pcWheels;
-   /* Pointer to the foot-bot proximity sensor */
-   CCI_FootBotProximitySensor* m_pcProximity;
+
+   CCI_KheperaIVProximitySensor* m_pcProximity;
 
    CCI_PositioningSensor* m_pcPosSens;
 
+   CRadians ogYaw;
 
    std::string m_strOutput;
-   std::fstream m_cOutput;
+   std::ofstream m_cOutput;
 
    /*
     * The following variables are used as parameters for the
     * algorithm. You can set their value in the <parameters> section
     * of the XML configuration file, under the
-    * <controllers><footbot_diffusion_controller> section.
+    * <controllers><kheperaiv_mqp_controller> section.
     */
 
    /* Maximum tolerance for the angle between
@@ -143,48 +169,69 @@ private:
     */
    Real m_fDelta;
    /* Wheel speed. */
-   Real m_fWheelVelocity;
+   Real maxRobotVelocity;
+   Real maxRobotOmega;
    /* Angle tolerance range to go straight.
     * It is set to [-alpha,alpha]. */
    CRange<CRadians> m_cGoStraightAngleRange;
 
-   CVector3 pos;
+   CVector3 curr_pos;
+   CVector3 prev_pos;
+   bool prev_pos_filled = false;
+   CVector3 curr_vel;
+   CVector3 goal_pos;
+   CVector3 ogPos;
    CQuaternion quat;
    CRadians yaw, temp1, temp2;
 
-   //pid values for rotating, could be tuned
-   double kp = 5;
-   double kd = 1;
-   double minimum_speed = 4;
-   double maximum_speed = 0;
+   // PID values
+   double vel_kp;
+   double vel_ki;
+   double vel_kd;
+   double theta_kp;
+   double theta_ki;
+   double theta_kd;
 
+   double theta;
    double ideal_speed;
 
-   int robot_count = 0;
-   int curr_robot = 0;
-
-   CRadians ogYaw;
-
-   double depot[2] = {-1, -1};
-   double angleerr, prevangleerr = 0;
    double wheelbase = 0.14;
 
-   std::ofstream currPositions;
+   double dist_err = 0.;
+   double angle_err = 0.;
+   double prev_angle_err = 0.;
 
-   //50 defines the maximum number of allowed nodes in any path, so before running a test would need to change to L/2
-   //this is a dumb solution, but i couldn't think of a nice way to get that information before declaring this object
-   //double path_arr[50][2]; //set to max # of nodes in possible space L/2
-   int xorycount = 0;
-   int countinstr = 0;
    int c = 0;
-   int path_length = 0;
+   int subtour_idc = 0;
+   EState m_eState;
+
+   double kp = 5;
+   double kd = 1;
+   double minimum_speed = 0;
+   double maximum_speed = 4;
+
+   Real m_fWheelVelocity;
+
+   double wait_counter = 0;
+   double perturbation_counter = 0;
+
+
+   double angleerr = 0;
+   double prevangleerr = 0;
+
+   PIDController vel_ctrl;
+   PIDController theta_ctrl;
+
+   double df = 10.;
+   double d_min = 0.05;
+   double d_max = 0.125;
 
    bool finished_drive = false;
    bool finished_first_rot = false;
    bool finished_second_rot = false;
+   bool finished_third_rot = false;
 
-   std::string path;
-   double pi = 3.1415926;
+   CRandom::CRNG *m_pcRNG;
 
 };
 
