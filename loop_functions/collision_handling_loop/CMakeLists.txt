@@ -7,8 +7,10 @@ find_package(fmt REQUIRED)
 add_library(collision_handling_loop MODULE
         mqp_http_client.h
         collision_handling_loop.h
+        data_parsing.h
         mqp_http_client.cpp
-        collision_handling_loop.cpp)
+        collision_handling_loop.cpp
+        data_parsing.cpp)
 
 target_link_libraries(collision_handling_loop
         collision_handling

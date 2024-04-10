@@ -293,6 +293,9 @@ bool CFootBotCollisionHandling::RotateToCircle(argos::CRadians desiredAngle, arg
 bool CFootBotCollisionHandling::Drive(){
   double wait = 150;
 
+  if(curr_pos.GetX() < depot_x+0.25 && curr_pos.GetY() < depot_y+0.25){
+    wait = 400;
+  }
   if(wait == true && wait_counter < wait){
     m_pcWheels->SetLinearVelocity(0, 0);
 
@@ -314,7 +317,6 @@ bool CFootBotCollisionHandling::Drive(){
 
     else{
       // If not, drive there
-
       /* Calculate f_r (repulsive force) */
       CVector2 f_r;
       const CCI_KheperaIVProximitySensor::TReadings& tProxReads = m_pcProximity->GetReadings();

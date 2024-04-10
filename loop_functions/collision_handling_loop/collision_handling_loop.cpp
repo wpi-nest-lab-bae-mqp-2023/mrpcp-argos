@@ -4,6 +4,7 @@
 #include <controllers/collision_handling/collision_mqp.h>
 
 #include <sstream>
+
 #include <list>
 #include <fmt/core.h>
 
@@ -112,11 +113,12 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
   std::cout << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
 }
 
-
 void CollisionHandlingLoop::PreStep() {
    CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("kheperaiv");
    CVector2 robot_posn[num_of_robots];
    CRadians robot_angle[num_of_robots];
+
+   std::string line = "";
 
    int ki = 0;
    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
@@ -136,6 +138,7 @@ void CollisionHandlingLoop::PreStep() {
 
       robot_posn[ki] = cPos;
       robot_angle[ki] = cZAngle;
+
       ki += 1;
    }
 
@@ -182,7 +185,7 @@ void CollisionHandlingLoop::PreStep() {
 
            double distance = sqrt(pow((robot_posn[j].GetY()-cPos.GetY()), 2) + pow((robot_posn[j].GetX()-cPos.GetX()), 2));
            //if(abs(cPos.GetX() - (depot_x - 0.5)) < 2 && abs(cPos.GetY() - (depot_y - 0.5)) < 2){
-           if(abs(diffAngle-secondDiffAngle) < 0.1 && abs(distance) < 0.3){
+           if(abs(diffAngle-secondDiffAngle) < 0.15 && abs(distance) < 0.35){
              cController.willCollide = true;
            }
 
@@ -192,6 +195,8 @@ void CollisionHandlingLoop::PreStep() {
            }
          //}
        }
+       line = line + std::to_string(cPos.GetX()) + "," + std::to_string(cPos.GetY()) + "," + std::to_string(cController.stepsInWorld) + ";";
+
        cController.stepsInWorld += 1;
    }
 
@@ -211,8 +216,10 @@ void CollisionHandlingLoop::PreStep() {
      RemoveEntity("ch-"+std::to_string(rand() % num_of_robots));
 
      mqp_http_client::solve(&path_arr, host, k, n_a, fcr, fr, ssd, "h2", rp); //convert to recalculate
+
    }
 
+   data_parsing::WriteLine(line);
    /*
    if(x % 200 == 0){ //failure happens
      LOGERR << "Failure happens" << std::endl;

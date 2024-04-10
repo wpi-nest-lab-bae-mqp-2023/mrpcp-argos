@@ -8,6 +8,8 @@
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
 
 #include "loop_functions/collision_handling_loop/mqp_http_client.h"
+#include "loop_functions/collision_handling_loop/data_parsing.h"
+
 #include <argos3/core/utility/configuration/argos_configuration.h>
 
 using namespace argos;
