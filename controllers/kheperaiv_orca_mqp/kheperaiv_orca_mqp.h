@@ -86,9 +86,10 @@ public:
     std::vector<std::vector<RVO::Vector2>> obstacles = std::vector<std::vector<RVO::Vector2>>();
     double rab_range;
 
-    std::vector<std::vector<std::vector<float>>> path_arr;
+    std::vector<std::vector<std::vector<double>>> path_arr;
 
-    virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
+    virtual void SetPath(std::vector<std::vector<std::vector<double>>> path_arrki);
+    bool is_turn_to_startup_depot = false;
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);

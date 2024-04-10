@@ -19,7 +19,7 @@ CKheperaIVORCAMQP::CKheperaIVORCAMQP() :
         curr_vel_y_filter(AveragingFilter(5, 0.))
 { }
 
-void CKheperaIVORCAMQP::SetPath(std::vector<std::vector<std::vector<float>>> path_arrki) {
+void CKheperaIVORCAMQP::SetPath(std::vector<std::vector<std::vector<double>>> path_arrki) {
     path_arr = std::move(path_arrki);
     Reset();
 }
@@ -59,9 +59,9 @@ void CKheperaIVORCAMQP::ResetSim() {
     /* Create a new simulator instance. */
     simulator = new RVO::RVOSimulator();
     /* Specify the global time step of the simulation. */
-    simulator->setTimeStep(0.25F);
+    simulator->setTimeStep(0.1F);
     /* Specify the default parameters for agents that are subsequently added. */
-    simulator->setAgentDefaults((float)(rab_range), 10U, 5.0F, 5.0F, (float)(KHEPERAIV_BASE_RADIUS * 2.), (float)maxRobotVelocity);
+    simulator->setAgentDefaults((float)(rab_range), 10U, 1.0F, 1.0F, (float)(KHEPERAIV_BASE_RADIUS * 1.5), (float)(maxRobotVelocity/10.));
 
     /* Add polygonal obstacles */
     for (const auto& obstacle : obstacles) {
@@ -85,6 +85,7 @@ void CKheperaIVORCAMQP::ControlStep() {
     double x_err = goal_pos.GetX() - curr_pos.GetX();
     double y_err = goal_pos.GetY() - curr_pos.GetY();
     dist_err = sqrt(pow(x_err, 2) + pow(y_err, 2));
+
     angle_err = atan2(y_err, x_err) - yaw.GetValue();
     if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
     if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
@@ -94,6 +95,7 @@ void CKheperaIVORCAMQP::ControlStep() {
     switch(m_eState) {
         case STATE_GOING_TO_POINT: {
 //            RotateDriveRotate(false);
+            if (!is_turn_to_startup_depot) { return; }
             DriveORCA();
             break;
         }
@@ -106,7 +108,7 @@ void CKheperaIVORCAMQP::ControlStep() {
             break;
         }
         case STATE_NEW_POINT: {
-            subtour_idx += 1;
+            node_idx += 1;
             if(node_idx==path_arr[subtour_idx].size()){
                 node_idx = 0;
                 subtour_idx += 1;
@@ -127,10 +129,9 @@ void CKheperaIVORCAMQP::ControlStep() {
 //                    c = 0;
 //                }
 //            }
-
-
             goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
             goal_pos.SetY(path_arr[subtour_idx][node_idx][1]);
+
 
 //            if(goal_pos.GetX() == depot_x && goal_pos.GetY() == depot_y){
 //                m_eState = GOING_TO_DEPOT;
@@ -138,6 +139,8 @@ void CKheperaIVORCAMQP::ControlStep() {
 //            else{
 //                m_eState = STATE_GOING_TO_POINT;
 //            }
+            m_eState = STATE_GOING_TO_POINT;
+
             break;
         }
         case AT_DEPOT: {
@@ -167,6 +170,7 @@ void CKheperaIVORCAMQP::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SRe
 }
 
 void CKheperaIVORCAMQP::BroadcastORCA() {
+    if (!is_turn_to_startup_depot) { return; }
     NORCADataBytes nORCADataBytes = NORCAData(curr_pos, curr_vel).GetBytes();
     char* byteArray = reinterpret_cast<char*>(&nORCADataBytes);
     for(int i=0;i<sizeof nORCADataBytes;i++) {m_pcRABA->SetData(i,byteArray[i]);}
@@ -202,7 +206,8 @@ void CKheperaIVORCAMQP::DriveORCA() {
     simulator->doStep();
     orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(simulator->getNumAgents()-1)).Rotate(-yaw);
     // If close to goal point, get new point
-    if (orcaVec.Length() < 0.1) { m_eState = STATE_NEW_POINT; return; }
+    if (dist_err < 0.1) { m_eState = STATE_NEW_POINT; return; }
+    if (goal_pos.GetX() == path_arr[0][0][0] && goal_pos.GetY() == path_arr[0][0][1] && dist_err < 0.3) { m_eState = STATE_NEW_POINT; return; }
     // If not, apply ORCA
     ApplyORCA(orcaVec);
 //    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;
@@ -213,9 +218,14 @@ void CKheperaIVORCAMQP::ApplyORCA(CVector2 VelVec) {
     auto orca_angle_err = VelVec.Angle().GetValue();
     if(orca_angle_err >= M_PI) { orca_angle_err -= 2 * M_PI; }
     if(orca_angle_err < -M_PI) { orca_angle_err += 2 * M_PI; }
+//    std::cout << "orca_angle_err: " << orca_angle_err << std::endl;
+
     double vel_eff = 0.; double omega_eff = 0.;
-    if (orca_angle_err > M_PI_4 && orca_angle_err < M_PI * 3./4. || orca_angle_err < -M_PI_4 && orca_angle_err > -M_PI * 3./4.) {
+    double tolerance = 0.1;
+    if (((orca_angle_err > tolerance) && (orca_angle_err < M_PI - tolerance)) || ((orca_angle_err < -tolerance) && (orca_angle_err > -M_PI + tolerance))) {
         if (abs(orca_angle_err) > M_PI_2) { orca_angle_err *= -1.; }
+//        std::cout << "in place rotation: " << std::endl;
+
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);
     } else {
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);

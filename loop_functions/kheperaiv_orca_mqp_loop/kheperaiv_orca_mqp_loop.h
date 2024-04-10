@@ -29,12 +29,17 @@ public:
     virtual ~CKheperaIVORCAMQPLoop() {}
 
     virtual void Init(TConfigurationNode& t_node);
+    virtual void PreStep();
 
     void RequestPath(TConfigurationNode& t_tree);
+    void CalculateObstacles();
 
     std::vector<std::vector<std::vector<std::vector<double>>>> path_arr;
     std::vector<std::vector<RVO::Vector2>> obstacles;
     std::vector<CKheperaIVEntity*> cKheperaIVs;
+    std::vector<double> depot;
+    unsigned int depot_turn_robot_id = 0;
+    unsigned long num_of_robots;
 
 };
 

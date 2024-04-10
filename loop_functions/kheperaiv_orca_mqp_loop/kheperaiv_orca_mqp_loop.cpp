@@ -11,23 +11,7 @@ CKheperaIVORCAMQPLoop::CKheperaIVORCAMQPLoop() {
 void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
     RequestPath(t_tree);
-
-    auto obstacles = std::vector<std::vector<RVO::Vector2>>();
-    CSpace::TMapPerType& tBoxMap = GetSpace().GetEntitiesByType("box");
-    /* Go through them */
-    for(CSpace::TMapPerType::iterator it = tBoxMap.begin();
-        it != tBoxMap.end();
-        ++it) {
-        CBoxEntity& cBox = *any_cast<CBoxEntity*>(it->second);
-//        std::cout << "Box: " << "MinCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner << " -  MaxCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner << std::endl;
-
-        auto obstacle = std::vector<RVO::Vector2>();
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
-        obstacles.push_back(obstacle);
-    }
+    CalculateObstacles();
 
     double rab_range = 1.0;
 
@@ -35,41 +19,83 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     random_quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
-    double delta_1 = 1.;
-    double delta_2 = 0.65;
-    double center_x = delta_1 / 2.;
-    double center_y = delta_2 / 2. * 4;
-    for (unsigned long i = 0; i < 2; ++i) {
-        for (unsigned long j = 0; j < 5; ++j) {
-            unsigned long robot_id = i * 5 + j;
-//            std::cout << "New robot_id:" << robot_id << std::endl;
+    //    unsigned long num_of_robots = 3;
+    num_of_robots = path_arr.size();
+    unsigned long num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
 
-//            if (robot_id != 0) {
-                random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
-//            }
+//    double depot_x = path_arr[0][0][0][0];
+//    double depot_y = path_arr[0][0][0][1];
+    depot = path_arr[0][0][0];
+    double delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
+
+    for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
+        for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
+            unsigned long robot_id = i * num_of_robots_per_side + j;
+            if (robot_id >= num_of_robots) { break; }
+
+            random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
 
             // Populate the robots array and configure the robot
             cKheperaIVs.push_back(new CKheperaIVEntity(
                     fmt::format("kp{}", robot_id),
                     "kheperaiv_orca_mqp_controller",
-                    CVector3(center_x- i * delta_1, center_y - j * delta_2, 0),
+                    CVector3(depot[0] - i * delta, depot[1] - j * delta, 0),
                     random_quat,
                     rab_range));
             AddEntity(*cKheperaIVs[robot_id]);
 
             auto &cController = dynamic_cast<CKheperaIVORCAMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
             cController.id = robot_id;
-            int goal_i = i == 0 ? 1 : 0;
-            cController.goal_pos = CVector2(center_x - goal_i * delta_1, center_y - j * delta_2);
             cController.obstacles = obstacles;
             cController.rab_range = rab_range;
-
-//            std::cout << "curr_pos:" << center_x- i * delta_1 << "," << center_y - j * delta_2 << std::endl;
-//            std::cout << "goal_pos:" << cController.goal_pos.GetX() << "," << cController.goal_pos.GetY() << std::endl;
-
+            cController.SetPath(path_arr[robot_id]);
         }
     }
+
+    std::cout << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
 }
+
+void CKheperaIVORCAMQPLoop::PreStep() {
+//    std::cout << "depot_turn_robot_id" << depot_turn_robot_id << std::endl;
+
+//    for (int i = 0; i < num_of_robots; ++i) {
+////        CFootBotEntity* pcFB = any_cast<CFootBotEntity*>(it->second);
+//
+//        auto cKheperaIV = &dynamic_cast<CKheperaIVEntity &>(GetSpace().GetEntity(fmt::format("kp{}", i)));
+//        auto &cController = dynamic_cast<CKheperaIVORCAMQP &>(cKheperaIV->GetControllableEntity().GetController());
+//        if (cController.id == depot_turn_robot_id) {
+//            cController.is_turn_to_startup_depot = true;
+//        }
+////        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
+//        if (cController.id == depot_turn_robot_id && cController.goal_pos.GetX() != depot[0] && cController.goal_pos.GetY() != depot[1]) {
+//            depot_turn_robot_id += 1;
+//        }
+//    }
+
+//    CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("kheperaiv");
+//
+//    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
+//        it != m_cFootbots.end();
+//        ++it) {
+//        /* Get handle to foot-bot entity and controller */
+//        CFootBotEntity &cFootBot = *any_cast<CFootBotEntity *>(it->second);
+//
+//    }
+
+
+    for (auto cKheperaIV : cKheperaIVs) {
+        auto &cController = dynamic_cast<CKheperaIVORCAMQP &>(cKheperaIV->GetControllableEntity().GetController());
+        if (cController.id == depot_turn_robot_id) {
+            cController.is_turn_to_startup_depot = true;
+        }
+//        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
+        if (cController.id == depot_turn_robot_id && (cController.goal_pos.GetX() != depot[0] || cController.goal_pos.GetY() != depot[1])) {
+            depot_turn_robot_id += 1;
+        }
+
+    }
+}
+
 
 
 void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
@@ -99,9 +125,28 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     std::cout << "Waiting on a solution..." << std::endl;
 
     mqp_http_client::solve(&path_arr, host, k, n_a, fcr, rp, ssd, mode);
-    mqp_http_client::printPaths(path_arr);
+//    mqp_http_client::printPaths(path_arr);
 
 }
+
+void CKheperaIVORCAMQPLoop::CalculateObstacles() {
+    CSpace::TMapPerType& tBoxMap = GetSpace().GetEntitiesByType("box");
+    /* Go through them */
+    for(CSpace::TMapPerType::iterator it = tBoxMap.begin();
+        it != tBoxMap.end();
+        ++it) {
+        CBoxEntity& cBox = *any_cast<CBoxEntity*>(it->second);
+//        std::cout << "Box: " << "MinCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner << " -  MaxCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner << std::endl;
+
+        auto obstacle = std::vector<RVO::Vector2>();
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
+        obstacles.push_back(obstacle);
+    }
+}
+
 
 
 REGISTER_LOOP_FUNCTIONS(CKheperaIVORCAMQPLoop, "kheperaiv_orca_mqp_loop")
