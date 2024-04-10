@@ -12,7 +12,14 @@ CIDQTUserFunctions::CIDQTUserFunctions() :
 /****************************************/
 
 void CIDQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
-   DrawText(CVector3(0.0, 0.0, 0.2), c_entity.GetId());
+    DrawText(CVector3(0.0, 0.0, 0.2), c_entity.GetId());
+    auto &cController = dynamic_cast<CKheperaIVORCA &>(c_entity.GetControllableEntity().GetController());
+//    auto curr_robot_pos = CVector3(cController.curr_pos.GetX(), cController.curr_pos.GetY(), 0.);
+    auto curr_orca_vec = CVector3(cController.orcaVec.GetX(), cController.orcaVec.GetY(), 0.);
+    DrawRay(CRay3(CVector3(0., 0., 0.03),
+                  curr_orca_vec + CVector3(0., 0., 0.03)),
+            CColor(0xFF, 0xFA, 0xFE, 250), 3);
+
 }
 
 void CIDQTUserFunctions::DrawInWorld() {
