@@ -51,7 +51,6 @@ public:
     CVector2 goal_pos;
 
     struct NORCADataBytes {
-        bool hasFailed;
         double curr_pos_x;
         double curr_pos_y;
         double curr_vel_x;
@@ -59,20 +58,17 @@ public:
     };
     class NORCAData {
     public:
-        bool hasFailed;
         CVector2 curr_pos;
         CVector2 curr_vel;
-        NORCAData(): hasFailed(true), curr_pos(CVector2()), curr_vel(CVector2()) {}
-        NORCAData(bool hasFailed, CVector2 curr_pos, CVector2 curr_vel) :
-            hasFailed(hasFailed), curr_pos(curr_pos), curr_vel(curr_vel) {}
+        NORCAData(): curr_pos(CVector2()), curr_vel(CVector2()) {}
+        NORCAData(CVector2 curr_pos, CVector2 curr_vel) :
+            curr_pos(curr_pos), curr_vel(curr_vel) {}
         explicit NORCAData(NORCADataBytes nVelVecBytes) {
-            hasFailed = nVelVecBytes.hasFailed;
             curr_pos = CVector2(nVelVecBytes.curr_pos_x, nVelVecBytes.curr_pos_y);
             curr_vel = CVector2(nVelVecBytes.curr_vel_x, nVelVecBytes.curr_vel_y);
         }
         NORCADataBytes GetBytes() {
             return NORCADataBytes{
-                    hasFailed,
                     curr_pos.GetX(),
                     curr_pos.GetY(),
                     curr_vel.GetX(),
@@ -123,8 +119,8 @@ private:
     double theta_kd;
     PIDController vel_ctrl;
     PIDController theta_ctrl;
-    CVector2 CalculateEffort(CVector2 VelVec);
-    virtual void ApplyTwist(double v_eff, double omega_eff);
+    void ApplyORCA(CVector2 VelVec);
+    void ApplyTwist(double v_eff, double omega_eff);
 
     AveragingFilter curr_vel_x_filter;
     AveragingFilter curr_vel_y_filter;

@@ -7,7 +7,7 @@
 CKheperaIVORCA::CKheperaIVORCA() :
         maxRobotVelocity(2.),
         maxRobotOmega(10.),
-        vel_kp(1.),
+        vel_kp(100.),
         vel_ki(0.),
         vel_kd(0.),
         theta_kp(20.),
@@ -15,8 +15,8 @@ CKheperaIVORCA::CKheperaIVORCA() :
         theta_kd(0.1),
         vel_ctrl(vel_kp, vel_ki, vel_kd, -maxRobotVelocity, maxRobotVelocity),
         theta_ctrl(theta_kp, theta_ki, theta_kd, -maxRobotOmega, maxRobotOmega),
-        curr_vel_x_filter(AveragingFilter(5, maxRobotVelocity)),
-        curr_vel_y_filter(AveragingFilter(5, maxRobotVelocity))
+        curr_vel_x_filter(AveragingFilter(5, 0.)),
+        curr_vel_y_filter(AveragingFilter(5, 0.))
 {
 
 }
@@ -34,20 +34,18 @@ void CKheperaIVORCA::Init(TConfigurationNode& t_node) {
 void CKheperaIVORCA::Reset(){
     // Clear data from the actuator
     m_pcRABA->ClearData();
-    ResetSim();
     m_pcRNG = CRandom::CreateRNG("argos");
-//    std::vector<uint8_t> rabData(m_pcRABA->GetSize(), 0);
-//    CByteArray c_data = CByteArray(rabData.data(), m_pcRABA->GetSize());
-
+    m_pcRNG->SetSeed(id);
+    ResetSim();
 }
 
 void CKheperaIVORCA::ResetSim() {
+    /* Create a new simulator instance. */
     simulator = new RVO::RVOSimulator();
     /* Specify the global time step of the simulation. */
     simulator->setTimeStep(0.25F);
-
     /* Specify the default parameters for agents that are subsequently added. */
-    simulator->setAgentDefaults((float)KHEPERAIV_BASE_RADIUS * 10., 10U, 10.0F, 10.0F, (float)KHEPERAIV_BASE_RADIUS * 2, (float)maxRobotVelocity);
+    simulator->setAgentDefaults((float)(KHEPERAIV_BASE_RADIUS * 100.), 10U, 5.0F, 5.0F, (float)(KHEPERAIV_BASE_RADIUS * 2.), (float)maxRobotVelocity);
 }
 
 void CKheperaIVORCA::ControlStep() {
@@ -60,42 +58,26 @@ void CKheperaIVORCA::ControlStep() {
     UpdateVelocityVector(m_pcWheelsS->GetReading());
     BroadcastORCA();
 
-    /* Store the goals of the agents. */
+    /* Reset simulation and calculate ORCA preferred velocity. */
     ResetSim();
-    std::vector<bool> has_faileds;
-    std::vector<RVO::Vector2> goal_vels;
-    const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
-    for(size_t i = 0; i < tPackets.size(); ++i) {
-        CKheperaIVORCA::NORCAData nORCAData = GetORCAData(tPackets[i]);
-        has_faileds.push_back(nORCAData.hasFailed);
-        simulator->addAgent(nORCAData.GetCurrPos());
-        RVO::Vector2 goalVel = nORCAData.GetCurrVel(); // constant speed of 0.2 m/s
-        goal_vels.push_back(goalVel);
-    }
-    simulator->addAgent(NORCAData::ARGOStoRVOVec(curr_pos));
-    has_faileds.push_back(false);
     auto prefVelVec = goal_pos - curr_pos;
     if (prefVelVec.Length() > maxRobotVelocity) { prefVelVec = prefVelVec.Normalize() * maxRobotVelocity; }
-    goal_vels.push_back(NORCAData::ARGOStoRVOVec(prefVelVec));
-//    goal_vels.push_back(NORCAData::ARGOStoRVOVec(CVector2(prefEff.GetX(), CRadians(prefEff.GetY()))));
-
-    // Now simulate
-    for(size_t i = 0; i < goal_vels.size(); ++i) {
-        RVO::Vector2 goalVel = has_faileds[i] ? RVO::Vector2(0., 0.) : goal_vels[i];
-        simulator->setAgentPrefVelocity(i, goalVel);
+    const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
+    for(size_t i = 0; i < tPackets.size() + 1; ++i) {
+        CKheperaIVORCA::NORCAData nORCAData = i == tPackets.size() ? NORCAData(curr_pos, prefVelVec) : GetORCAData(tPackets[i]);
+        simulator->addAgent(nORCAData.GetCurrPos());
 
         /* Perturb a little to avoid deadlocks due to perfect symmetry. */
-        float angle = static_cast<float>(m_pcRNG->Uniform(CRange(0., M_PI * 2.)));
-        float dist = static_cast<float>(m_pcRNG->Uniform(CRange(0., 0.0001)));
-
+        float angle = (float)m_pcRNG->Uniform(CRange(-M_PI, M_PI));
+        float dist = (float)m_pcRNG->Uniform(CRange(0., maxRobotVelocity / 100.));
         simulator->setAgentPrefVelocity(
-                i, simulator->getAgentPrefVelocity(i) +
+                i, nORCAData.GetCurrVel() +
                    dist * RVO::Vector2(std::cos(angle), std::sin(angle)));
+
     }
     simulator->doStep();
-    orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(goal_vels.size()-1) * simulator->getAgentTimeHorizon(goal_vels.size()-1)).Rotate(-yaw);
-    auto actEff = CalculateEffort(orcaVec);
-    ApplyTwist(actEff.GetX(), actEff.GetY());
+    orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(simulator->getNumAgents()-1)).Rotate(-yaw);
+    ApplyORCA(orcaVec);
 }
 
 void CKheperaIVORCA::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading) {
@@ -108,13 +90,13 @@ void CKheperaIVORCA::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReadi
     double vel_magnitude = (left_wheel_vel + right_wheel_vel) / 2.;
     double vel_omega = (vel_magnitude - left_wheel_vel) / KHEPERAIV_HALF_WHEEL_DISTANCE;
     auto tmp = CVector2(vel_magnitude, CRadians(vel_omega));
-    auto curr_vel_x = curr_vel_x_filter.addAndReturnAverage(tmp.GetX());
-    auto curr_vel_y = curr_vel_y_filter.addAndReturnAverage(tmp.GetY());
+    auto curr_vel_x = curr_vel_x_filter.isFilledOnce ? curr_vel_x_filter.addAndReturnAverage(tmp.GetX()) : tmp.GetX();
+    auto curr_vel_y = curr_vel_x_filter.isFilledOnce ? curr_vel_y_filter.addAndReturnAverage(tmp.GetY()) : tmp.GetY();
     curr_vel = CVector2(curr_vel_x, curr_vel_y);
 }
 
 void CKheperaIVORCA::BroadcastORCA() {
-    NORCADataBytes nORCADataBytes = NORCAData(false, curr_pos, curr_vel).GetBytes();
+    NORCADataBytes nORCADataBytes = NORCAData(curr_pos, curr_vel).GetBytes();
     char* byteArray = reinterpret_cast<char*>(&nORCADataBytes);
     for(int i=0;i<sizeof nORCADataBytes;i++) {m_pcRABA->SetData(i,byteArray[i]);}
 }
@@ -128,18 +110,21 @@ CKheperaIVORCA::NORCAData CKheperaIVORCA::GetORCAData(CCI_RangeAndBearingSensor:
     return NORCAData(nVelVecBytes);
 }
 
-CVector2 CKheperaIVORCA::CalculateEffort(CVector2 VelVec) {
+void CKheperaIVORCA::ApplyORCA(CVector2 VelVec) {
     auto dist_err = VelVec.Length();
     auto angle_err = VelVec.Angle().GetValue();
-    double omega_eff = 0.; double vel_eff = 0.;
-    if (abs(angle_err) > 0.05 && abs(angle_err) < M_PI_2) {
+    if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
+    if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
+    double vel_eff = 0.; double omega_eff = 0.;
+    if (angle_err > M_PI_4 && angle_err < M_PI * 3./4. || angle_err < -M_PI_4 && angle_err > -M_PI * 3./4.) {
+        if (abs(angle_err) > M_PI_2) { angle_err *= -1.; }
         omega_eff = theta_ctrl.computeEffort(angle_err);
     } else {
         omega_eff = theta_ctrl.computeEffort(angle_err);
         vel_eff = vel_ctrl.computeEffort(dist_err);
-        if (abs(angle_err) > M_PI_2) { omega_eff *= -1; vel_eff *= -1; }
+        if (abs(angle_err) > M_PI_2) { omega_eff *= -1.; vel_eff *= -1.; }
     }
-    return {vel_eff, omega_eff};
+    ApplyTwist(vel_eff, omega_eff);
 }
 
 void CKheperaIVORCA::ApplyTwist(double v_eff, double omega_eff) {
@@ -147,7 +132,6 @@ void CKheperaIVORCA::ApplyTwist(double v_eff, double omega_eff) {
     double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
     m_pcWheelsA->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
 }
-
 
 
 REGISTER_CONTROLLER(CKheperaIVORCA, "kheperaiv_orca_controller")
