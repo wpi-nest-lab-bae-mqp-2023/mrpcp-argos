@@ -14,7 +14,7 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
     double delta_1 = 0.5;
-    double delta_2 = 0.5;
+    double delta_2 = 0.65;
     double center_x = delta_1 / 2.;
     double center_y = delta_2 / 2. * 4;
     for (unsigned long i = 0; i < 2; ++i) {
