@@ -16,9 +16,9 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_measures.h>
 #include <argos3/core/utility/math/rng.h>
+#include <argos3/core/utility/logging/argos_log.h>
 
 #include <controllers/kheperaiv_mqp/PIDController.h>
-
 
 #include "RVO.h"
 #include "Filter.h"
@@ -86,9 +86,14 @@ public:
     std::vector<std::vector<RVO::Vector2>> obstacles = std::vector<std::vector<RVO::Vector2>>();
     double rab_range;
 
+    std::vector<std::vector<std::vector<float>>> path_arr;
+
+    virtual void SetPath(std::vector<std::vector<std::vector<float>>> path_arrki);
+
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
     void BroadcastORCA();
+    void DriveORCA();
     static NORCAData GetORCAData(CCI_RangeAndBearingSensor::SPacket sPacket);
 
     void ResetSim();
@@ -126,6 +131,21 @@ private:
 
     AveragingFilter curr_vel_x_filter;
     AveragingFilter curr_vel_y_filter;
+
+    /* The three possible states in which the controller can be */
+    enum EState {
+        STATE_GOING_TO_POINT = 0,
+        STATE_NEW_POINT = 1,
+        AT_DEPOT = 2,
+        GOING_TO_DEPOT = 3,
+    };
+    EState m_eState;
+
+    unsigned long subtour_idx;
+    unsigned long node_idx;
+
+    double dist_err = 0.;
+    double angle_err = 0.;
 
 
 };

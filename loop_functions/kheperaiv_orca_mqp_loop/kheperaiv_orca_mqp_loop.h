@@ -11,6 +11,7 @@
 #include <fmt/core.h>
 
 #include <controllers/kheperaiv_orca_mqp/kheperaiv_orca_mqp.h>
+#include "mqp_http_client.h"
 
 /*
  * All the ARGoS stuff in the 'argos' namespace.
@@ -29,6 +30,10 @@ public:
 
     virtual void Init(TConfigurationNode& t_node);
 
+    void RequestPath(TConfigurationNode& t_tree);
+
+    std::vector<std::vector<std::vector<std::vector<double>>>> path_arr;
+    std::vector<std::vector<RVO::Vector2>> obstacles;
     std::vector<CKheperaIVEntity*> cKheperaIVs;
 
 };
