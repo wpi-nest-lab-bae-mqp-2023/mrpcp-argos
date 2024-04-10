@@ -27,9 +27,9 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
         obstacles.push_back(obstacle);
     }
 
+    double rab_range = 1.0;
 
-
-        CQuaternion random_quat;
+    CQuaternion random_quat;
     random_quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
@@ -51,7 +51,8 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
                     fmt::format("kp{}", robot_id),
                     "kheperaiv_orca_controller",
                     CVector3(center_x- i * delta_1, center_y - j * delta_2, 0),
-                    random_quat));
+                    random_quat,
+                    rab_range));
             AddEntity(*cKheperaIVs[robot_id]);
 
             auto &cController = dynamic_cast<CKheperaIVORCA &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
@@ -59,6 +60,7 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
             int goal_i = i == 0 ? 1 : 0;
             cController.goal_pos = CVector2(center_x - goal_i * delta_1, center_y - j * delta_2);
             cController.obstacles = obstacles;
+            cController.rab_range = rab_range;
 
 //            std::cout << "curr_pos:" << center_x- i * delta_1 << "," << center_y - j * delta_2 << std::endl;
 //            std::cout << "goal_pos:" << cController.goal_pos.GetX() << "," << cController.goal_pos.GetY() << std::endl;

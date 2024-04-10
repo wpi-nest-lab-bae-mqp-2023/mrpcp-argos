@@ -45,7 +45,7 @@ void CKheperaIVORCA::ResetSim() {
     /* Specify the global time step of the simulation. */
     simulator->setTimeStep(0.25F);
     /* Specify the default parameters for agents that are subsequently added. */
-    simulator->setAgentDefaults((float)(KHEPERAIV_BASE_RADIUS * 100.), 10U, 5.0F, 5.0F, (float)(KHEPERAIV_BASE_RADIUS * 2.), (float)maxRobotVelocity);
+    simulator->setAgentDefaults((float)(rab_range), 10U, 5.0F, 5.0F, (float)(KHEPERAIV_BASE_RADIUS * 2.), (float)maxRobotVelocity);
 
     /* Add polygonal obstacles */
     for (const auto& obstacle : obstacles) {
@@ -86,6 +86,7 @@ void CKheperaIVORCA::ControlStep() {
     simulator->doStep();
     orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(simulator->getNumAgents()-1)).Rotate(-yaw);
     ApplyORCA(orcaVec);
+    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;
 }
 
 void CKheperaIVORCA::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading) {

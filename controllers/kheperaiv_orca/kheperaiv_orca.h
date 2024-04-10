@@ -84,6 +84,7 @@ public:
 
     CVector2 orcaVec;
     std::vector<std::vector<RVO::Vector2>> obstacles = std::vector<std::vector<RVO::Vector2>>();
+    double rab_range;
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
