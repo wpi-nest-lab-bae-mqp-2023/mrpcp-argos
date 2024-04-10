@@ -83,6 +83,7 @@ public:
 //    std::vector<NORCAData> nORCADatas = std::vector<NORCAData>();
 
     CVector2 orcaVec;
+    std::vector<std::vector<RVO::Vector2>> obstacles = std::vector<std::vector<RVO::Vector2>>();
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
@@ -124,6 +125,7 @@ private:
 
     AveragingFilter curr_vel_x_filter;
     AveragingFilter curr_vel_y_filter;
+
 
 };
 

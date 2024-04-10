@@ -8,6 +8,7 @@
 
 #include <controllers/kheperaiv_orca/kheperaiv_orca.h>
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
+#include <argos3/plugins/simulator/entities/box_entity.h>
 #include <fmt/core.h>
 
 #include <controllers/kheperaiv_orca/kheperaiv_orca.h>

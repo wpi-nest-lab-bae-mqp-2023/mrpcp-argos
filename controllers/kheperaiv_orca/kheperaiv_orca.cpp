@@ -46,6 +46,14 @@ void CKheperaIVORCA::ResetSim() {
     simulator->setTimeStep(0.25F);
     /* Specify the default parameters for agents that are subsequently added. */
     simulator->setAgentDefaults((float)(KHEPERAIV_BASE_RADIUS * 100.), 10U, 5.0F, 5.0F, (float)(KHEPERAIV_BASE_RADIUS * 2.), (float)maxRobotVelocity);
+
+    /* Add polygonal obstacles */
+    for (const auto& obstacle : obstacles) {
+        simulator->addObstacle(obstacle);
+//        std::cout << "Adding obstacle..." << std::endl;
+    }
+    /* Process the obstacles so that they are accounted for in the simulation. */
+    simulator->processObstacles();
 }
 
 void CKheperaIVORCA::ControlStep() {

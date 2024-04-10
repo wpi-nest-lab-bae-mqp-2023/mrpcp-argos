@@ -9,11 +9,31 @@ CKheperaIVORCALoop::CKheperaIVORCALoop() {
 }
 
 void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
-    CQuaternion random_quat;
+
+    auto obstacles = std::vector<std::vector<RVO::Vector2>>();
+    CSpace::TMapPerType& tBoxMap = GetSpace().GetEntitiesByType("box");
+    /* Go through them */
+    for(CSpace::TMapPerType::iterator it = tBoxMap.begin();
+        it != tBoxMap.end();
+        ++it) {
+        CBoxEntity& cBox = *any_cast<CBoxEntity*>(it->second);
+//        std::cout << "Box: " << "MinCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner << " -  MaxCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner << std::endl;
+
+        auto obstacle = std::vector<RVO::Vector2>();
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
+        obstacles.push_back(obstacle);
+    }
+
+
+
+        CQuaternion random_quat;
     random_quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
-    double delta_1 = 0.5;
+    double delta_1 = 1.;
     double delta_2 = 0.65;
     double center_x = delta_1 / 2.;
     double center_y = delta_2 / 2. * 4;
@@ -38,6 +58,7 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
             cController.id = robot_id;
             int goal_i = i == 0 ? 1 : 0;
             cController.goal_pos = CVector2(center_x - goal_i * delta_1, center_y - j * delta_2);
+            cController.obstacles = obstacles;
 
 //            std::cout << "curr_pos:" << center_x- i * delta_1 << "," << center_y - j * delta_2 << std::endl;
 //            std::cout << "goal_pos:" << cController.goal_pos.GetX() << "," << cController.goal_pos.GetY() << std::endl;
