@@ -15,6 +15,10 @@
 /* Definition of the range and bearing sensor */
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_sensor.h>
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_measures.h>
+#include <argos3/core/utility/math/rng.h>
+
+#include <controllers/kheperaiv_mqp/PIDController.h>
+
 
 #include "RVO.h"
 
@@ -45,28 +49,54 @@ public:
     CVector2 curr_vel;
     CVector2 goal_pos;
 
-    struct NVelVecBytes {
+    struct NORCADataBytes {
         bool hasFailed;
-//        double pos_x;
-//        double pos_y;
-        double vel_x;
-        double vel_y;
+        double curr_pos_x;
+        double curr_pos_y;
+        double curr_pos_h; // heading/yaw
+        double goal_pos_x;
+        double goal_pos_y;
     };
-    class NVelVec {
+    class NORCAData {
     public:
         bool hasFailed;
-        CVector2 pos;
-        CVector2 vel;
-        NVelVec(): hasFailed(true), pos(CVector2()), vel(CVector2()) {}
-        NVelVec(bool hasFailed, CVector2 pos, CVector2 vel): hasFailed(hasFailed), pos(pos), vel(vel) {}
+        CVector2 curr_pos;
+        CRadians curr_pos_h;
+        CVector2 goal_pos;
+        NORCAData(): hasFailed(true), curr_pos(CVector2()), curr_pos_h(0.), goal_pos(CVector2()) {}
+        NORCAData(bool hasFailed, CVector2 curr_pos, CRadians curr_pos_h, CVector2 goal_pos) :
+            hasFailed(hasFailed), curr_pos(curr_pos), curr_pos_h(curr_pos_h), goal_pos(goal_pos) {}
+        explicit NORCAData(NORCADataBytes nVelVecBytes) {
+            hasFailed = nVelVecBytes.hasFailed;
+            curr_pos = CVector2(nVelVecBytes.curr_pos_x, nVelVecBytes.curr_pos_y);
+            curr_pos_h = CRadians(nVelVecBytes.curr_pos_h);
+            goal_pos = CVector2(nVelVecBytes.goal_pos_x, nVelVecBytes.goal_pos_y);
+        }
+        NORCADataBytes GetBytes() {
+            return NORCADataBytes{
+                    hasFailed,
+                    curr_pos.GetX(),
+                    curr_pos.GetY(),
+                    curr_pos_h.GetValue(),
+                    goal_pos.GetX(),
+                    goal_pos.GetY(),
+            };
+        }
+        static RVO::Vector2 ARGOStoRVOVec(CVector2 arg_vec) { return {(float)arg_vec.GetX(), (float)arg_vec.GetY()}; }
+        static CVector2 RVOtoARGOSVec(RVO::Vector2 rvo_vec) { return {(double)rvo_vec.x(), (double)rvo_vec.y()}; }
+        RVO::Vector2 GetCurrPos(){ return ARGOStoRVOVec(curr_pos); }
+        RVO::Vector2 GetGoalPos(){ return ARGOStoRVOVec(goal_pos); }
     };
-    NVelVec curr_vel_vec = NVelVec();
-    std::vector<NVelVec> n_vel_vecs = std::vector<NVelVec>();
+//    std::vector<NORCAData> nORCADatas = std::vector<NORCAData>();
+
+    CVector2 orcaVec;
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
-    void BroadcastVelocityVector();
-    NVelVec GetVelocityVector(CCI_RangeAndBearingSensor::SPacket sPacket);
+    void BroadcastORCA();
+    static NORCAData GetORCAData(CCI_RangeAndBearingSensor::SPacket sPacket);
+
+    void ResetSim();
 
     CRadians yaw, temp1, temp2;
 
@@ -79,6 +109,26 @@ private:
     CCI_RangeAndBearingActuator*  m_pcRABA;
     /* Pointer to the range and bearing sensor */
     CCI_RangeAndBearingSensor* m_pcRABS;
+
+    RVO::RVOSimulator *simulator;
+
+    CRandom::CRNG *m_pcRNG;
+
+    /* Wheel speed. */
+    Real maxRobotVelocity;
+    Real maxRobotOmega;
+    // PID values
+    double vel_kp;
+    double vel_ki;
+    double vel_kd;
+    double theta_kp;
+    double theta_ki;
+    double theta_kd;
+    PIDController vel_ctrl;
+    PIDController theta_ctrl;
+
+    virtual void ApplyTwist(double v_eff, double omega_eff);
+
 };
 
 #endif
