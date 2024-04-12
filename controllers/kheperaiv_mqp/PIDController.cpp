@@ -19,6 +19,9 @@ double PIDController::computeEffort(double err)
     }
 
     prevError = std::max(minEffort, std::min(maxEffort, Kp * err + Ki * sumError + Kd * (err - prevError)));
+    if (std::abs(prevError) < minAbsEffort) {
+        prevError = prevError > 0. ? minAbsEffort : -minAbsEffort;
+    }
 
     return prevError;
 }

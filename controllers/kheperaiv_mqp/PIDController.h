@@ -16,9 +16,10 @@ private:
     double sumError = 0.;
     double minEffort = 0.;
     double maxEffort = 0.;
+    double minAbsEffort = 0.;
 
 public:
-    PIDController(double p, double i, double d, double minEff, double maxEff) : Kp(p), Ki(i), Kd(d), minEffort(minEff), maxEffort(maxEff) {}
+    PIDController(double p, double i, double d, double minEff, double maxEff, double minAbsEff=0.) : Kp(p), Ki(i), Kd(d), minEffort(minEff), maxEffort(maxEff), minAbsEffort(minAbsEff) {}
     double computeEffort(double err);
     void reset() { sumError = 0.; }
 };

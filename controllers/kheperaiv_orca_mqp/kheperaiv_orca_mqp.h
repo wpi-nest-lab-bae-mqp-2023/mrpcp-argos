@@ -49,6 +49,7 @@ public:
     CVector2 curr_pos;
     CVector2 curr_vel;
     CVector2 goal_pos;
+    CVector2 depot_pos;
 
     struct NORCADataBytes {
         double curr_pos_x;
@@ -148,6 +149,9 @@ private:
     double dist_err = 0.;
     double angle_err = 0.;
 
+    bool wasRotating = false;
+    double drivingTolerance = M_PI/12.;  // M_PI/12. = +- 15. degrees
+    double rotatingTolerance = M_PI/48.;  // M_PI/48. = +- 3.75 degrees
 
 };
 

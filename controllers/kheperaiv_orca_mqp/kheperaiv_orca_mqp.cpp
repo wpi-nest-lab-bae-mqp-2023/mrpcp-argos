@@ -5,18 +5,18 @@
 #include "kheperaiv_orca_mqp.h"
 
 CKheperaIVORCAMQP::CKheperaIVORCAMQP() :
-        maxRobotVelocity(2.),
-        maxRobotOmega(10.),
-        vel_kp(100.),
+        maxRobotVelocity(0.2),
+        maxRobotOmega(M_PI / 2.),
+        vel_kp(1.),
         vel_ki(0.),
         vel_kd(0.),
-        theta_kp(20.),
-        theta_ki(0.),
+        theta_kp(2.),
+        theta_ki(0.1),
         theta_kd(0.1),
-        vel_ctrl(vel_kp, vel_ki, vel_kd, -maxRobotVelocity, maxRobotVelocity),
-        theta_ctrl(theta_kp, theta_ki, theta_kd, -maxRobotOmega, maxRobotOmega),
-        curr_vel_x_filter(AveragingFilter(5, 0.)),
-        curr_vel_y_filter(AveragingFilter(5, 0.))
+        vel_ctrl(vel_kp, vel_ki, vel_kd, -maxRobotVelocity, maxRobotVelocity, maxRobotVelocity/4.),
+        theta_ctrl(theta_kp, theta_ki, theta_kd, -maxRobotOmega, maxRobotOmega, 0.),
+        curr_vel_x_filter(AveragingFilter(10, 0.)),
+        curr_vel_y_filter(AveragingFilter(10, 0.))
 { }
 
 void CKheperaIVORCAMQP::SetPath(std::vector<std::vector<std::vector<double>>> path_arrki) {
@@ -49,6 +49,8 @@ void CKheperaIVORCAMQP::Reset(){
     if(path_arr.empty()){ return; }
     goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
     goal_pos.SetY(path_arr[subtour_idx][node_idx][1]);
+    depot_pos.SetX(path_arr[0][0][0]);
+    depot_pos.SetY(path_arr[0][0][1]);
 
     vel_ctrl.reset();
     theta_ctrl.reset();
@@ -61,7 +63,7 @@ void CKheperaIVORCAMQP::ResetSim() {
     /* Specify the global time step of the simulation. */
     simulator->setTimeStep(0.1F);
     /* Specify the default parameters for agents that are subsequently added. */
-    simulator->setAgentDefaults((float)(rab_range), 10U, 1.0F, 1.0F, (float)(KHEPERAIV_BASE_RADIUS * 1.5), (float)(maxRobotVelocity/10.));
+    simulator->setAgentDefaults((float)(rab_range), 10U, 1.0F, 1.0F, (float)(KHEPERAIV_BASE_RADIUS * 1.5), (float)(maxRobotVelocity));
 
     /* Add polygonal obstacles */
     for (const auto& obstacle : obstacles) {
@@ -165,7 +167,7 @@ void CKheperaIVORCAMQP::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SRe
     double vel_omega = (vel_magnitude - left_wheel_vel) / KHEPERAIV_HALF_WHEEL_DISTANCE;
     auto tmp = CVector2(vel_magnitude, CRadians(vel_omega));
     auto curr_vel_x = curr_vel_x_filter.isFilledOnce ? curr_vel_x_filter.addAndReturnAverage(tmp.GetX()) : tmp.GetX();
-    auto curr_vel_y = curr_vel_x_filter.isFilledOnce ? curr_vel_y_filter.addAndReturnAverage(tmp.GetY()) : tmp.GetY();
+    auto curr_vel_y = curr_vel_y_filter.isFilledOnce ? curr_vel_y_filter.addAndReturnAverage(tmp.GetY()) : tmp.GetY();
     curr_vel = CVector2(curr_vel_x, curr_vel_y);
 }
 
@@ -197,7 +199,7 @@ void CKheperaIVORCAMQP::DriveORCA() {
 
         /* Perturb a little to avoid deadlocks due to perfect symmetry. */
         float angle = (float)m_pcRNG->Uniform(CRange(-M_PI, M_PI));
-        float dist = (float)m_pcRNG->Uniform(CRange(0., maxRobotVelocity / 100.));
+        float dist = (float)m_pcRNG->Uniform(CRange(0., maxRobotVelocity * 0.05));
         simulator->setAgentPrefVelocity(
                 i, nORCAData.GetCurrVel() +
                    dist * RVO::Vector2(std::cos(angle), std::sin(angle)));
@@ -205,9 +207,9 @@ void CKheperaIVORCAMQP::DriveORCA() {
     }
     simulator->doStep();
     orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(simulator->getNumAgents()-1)).Rotate(-yaw);
-    // If close to goal point, get new point
-    if (dist_err < 0.1) { m_eState = STATE_NEW_POINT; return; }
-    if (goal_pos.GetX() == path_arr[0][0][0] && goal_pos.GetY() == path_arr[0][0][1] && dist_err < 0.3) { m_eState = STATE_NEW_POINT; return; }
+    // If close to goal point, get new point (tolerance is increased near depot to reduce traffic near depot)
+    auto tolerance = 0.05 + std::min(0.1 / ((goal_pos - depot_pos).Length() + 0.01), 0.25);
+    if (dist_err < tolerance) { m_eState = STATE_NEW_POINT; return; }
     // If not, apply ORCA
     ApplyORCA(orcaVec);
 //    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;
@@ -221,16 +223,18 @@ void CKheperaIVORCAMQP::ApplyORCA(CVector2 VelVec) {
 //    std::cout << "orca_angle_err: " << orca_angle_err << std::endl;
 
     double vel_eff = 0.; double omega_eff = 0.;
-    double tolerance = 0.1;
+    double tolerance = wasRotating ? rotatingTolerance : drivingTolerance;
     if (((orca_angle_err > tolerance) && (orca_angle_err < M_PI - tolerance)) || ((orca_angle_err < -tolerance) && (orca_angle_err > -M_PI + tolerance))) {
         if (abs(orca_angle_err) > M_PI_2) { orca_angle_err *= -1.; }
 //        std::cout << "in place rotation: " << std::endl;
 
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);
+        wasRotating = true;
     } else {
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);
         vel_eff = vel_ctrl.computeEffort(orca_dist_err);
         if (abs(orca_angle_err) > M_PI_2) { omega_eff *= -1.; vel_eff *= -1.; }
+        wasRotating = false;
     }
     ApplyTwist(vel_eff, omega_eff);
 }
@@ -238,7 +242,7 @@ void CKheperaIVORCAMQP::ApplyORCA(CVector2 VelVec) {
 void CKheperaIVORCAMQP::ApplyTwist(double v_eff, double omega_eff) {
     double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
     double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    m_pcWheelsA->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
+    m_pcWheelsA->SetLinearVelocity(left_wheel_vel * 100., right_wheel_vel * 100.);
 }
 
 
