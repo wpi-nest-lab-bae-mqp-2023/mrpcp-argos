@@ -92,6 +92,10 @@ public:
 
     virtual void SetPath(std::vector<std::vector<std::vector<double>>> path_arrki);
     bool is_turn_to_startup_depot = false;
+    bool did_leave_from_startup_depot = false;
+
+    double fr = 0.;
+    unsigned int since_failed_counter = 0;
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);

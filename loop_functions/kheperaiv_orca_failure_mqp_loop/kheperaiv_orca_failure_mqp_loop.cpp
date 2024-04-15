@@ -27,6 +27,8 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 //    double depot_y = path_arr[0][0][0][1];
     depot = path_arr[0][0][0];
     double delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
+    float fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
+    if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
 
     for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
         for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
@@ -46,6 +48,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
             auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
             cController.id = robot_id;
+            cController.fr = fr;
             cController.obstacles = obstacles;
             cController.rab_range = rab_range;
             cController.SetPath(path_arr[robot_id]);
@@ -89,7 +92,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
             cController.is_turn_to_startup_depot = true;
         }
 //        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
-        if (cController.id == depot_turn_robot_id && (cController.goal_pos.GetX() != depot[0] || cController.goal_pos.GetY() != depot[1])) {
+        if (cController.id == depot_turn_robot_id && cController.goal_pos != cController.depot_pos && cController.did_leave_from_startup_depot) {
             depot_turn_robot_id += 1;
         }
 

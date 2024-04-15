@@ -106,7 +106,8 @@
                     fcr="1.5"
                     rp="3"
                     ssd="3"
-                    mode="h1" />
+                    mode="h1"
+                    fr="0.001" />
 
     <arena_params initial-robot-spacing="0.3" />
 

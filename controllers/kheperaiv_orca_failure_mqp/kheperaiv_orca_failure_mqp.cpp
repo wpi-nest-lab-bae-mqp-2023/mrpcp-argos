@@ -112,9 +112,18 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
         case STATE_DRIVE: {
             if (!is_turn_to_startup_depot) { return; }
             DriveORCA();
+
+            // Fail with a set probability rate
+            if (m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
+                std::cout << "id: " << id << " failed!" << std::endl;
+                since_failed_counter = 0;
+                m_eState = STATE_FAILURE;
+            }
             break;
         }
         case STATE_FAILURE: {
+            ApplyTwist(0., 0.);
+            since_failed_counter += 1;
             break;
         }
         default: {
@@ -177,6 +186,7 @@ void CKheperaIVORCAFailureMQP::DriveORCA() {
     // If close to goal point, get new point (tolerance is increased near depot to reduce traffic near depot)
     auto tolerance = 0.05 + std::min(0.1 / ((goal_pos - depot_pos).Length() + 0.01), 0.25);
     if (dist_err < tolerance) { m_eState = STATE_NEW_POINT; return; }
+    if (goal_pos != depot_pos && (curr_pos - depot_pos).Length() > 0.3) { did_leave_from_startup_depot = true; }
     // If not, apply ORCA
     ApplyORCA(orcaVec);
 //    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;
