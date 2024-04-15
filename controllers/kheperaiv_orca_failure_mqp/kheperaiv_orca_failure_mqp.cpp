@@ -41,12 +41,10 @@ void CKheperaIVORCAFailureMQP::Reset(){
     m_pcRNG->SetSeed(id);
     ResetSim();
 
-    m_eState = GOING_TO_DEPOT;
-
+    if(path_arr.empty()){ return; }
+    m_eState = STATE_DRIVE;
     subtour_idx = 0;
     node_idx = 0;
-
-    if(path_arr.empty()){ return; }
     goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
     goal_pos.SetY(path_arr[subtour_idx][node_idx][1]);
     depot_pos.SetX(path_arr[0][0][0]);
@@ -54,10 +52,10 @@ void CKheperaIVORCAFailureMQP::Reset(){
 
     vel_ctrl.reset();
     theta_ctrl.reset();
-
 }
 
 void CKheperaIVORCAFailureMQP::ResetSim() {
+    if (simulator != NULL) { delete simulator; }
     /* Create a new simulator instance. */
     simulator = new RVO::RVOSimulator();
     /* Specify the global time step of the simulation. */
@@ -75,6 +73,7 @@ void CKheperaIVORCAFailureMQP::ResetSim() {
 }
 
 void CKheperaIVORCAFailureMQP::ControlStep() {
+    // Step 0: Before you control anything, read sensors, update robot state variables, and broadcast velocity for ORCA
     // Read positioning sensors
     CCI_PositioningSensor::SReading sReading = m_pcPosSens->GetReading();
     sReading.Position.ProjectOntoXY(curr_pos);
@@ -93,22 +92,8 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
     if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
 
     if(path_arr.empty()){ return; }
-
+    // Step 1: Execute on the state machine only if there is a path for robots to follow.
     switch(m_eState) {
-        case STATE_GOING_TO_POINT: {
-//            RotateDriveRotate(false);
-            if (!is_turn_to_startup_depot) { return; }
-            DriveORCA();
-            break;
-        }
-        case GOING_TO_DEPOT: {
-//            goal_pos.SetX(depot_x-0.5);
-//            goal_pos.SetY(depot_y-0.5);
-
-//            RotateDriveRotate(true);
-            m_eState = STATE_GOING_TO_POINT;
-            break;
-        }
         case STATE_NEW_POINT: {
             node_idx += 1;
             if(node_idx==path_arr[subtour_idx].size()){
@@ -119,41 +104,23 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
                 }
             }
 
-
-//            if(goal_pos.GetX() == depot_x-0.5 && goal_pos.GetY() == depot_y-0.5){
-//                goal_pos.SetX(depot_x);
-//                goal_pos.SetY(depot_y);
-//            }
-
-//            while(goal_pos.GetX() == path_arr[subtour_idx][node_idx][0] && goal_pos.GetY() == path_arr[subtour_idx][node_idx][1]){
-//                c += 1;
-//                if(c==path_arr[subtour_idc].size()){
-//                    c = 0;
-//                }
-//            }
             goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
             goal_pos.SetY(path_arr[subtour_idx][node_idx][1]);
-
-
-//            if(goal_pos.GetX() == depot_x && goal_pos.GetY() == depot_y){
-//                m_eState = GOING_TO_DEPOT;
-//            }
-//            else{
-//                m_eState = STATE_GOING_TO_POINT;
-//            }
-            m_eState = STATE_GOING_TO_POINT;
-
+            m_eState = STATE_DRIVE;
             break;
         }
-        case AT_DEPOT: {
-//            Circle(0.75);
+        case STATE_DRIVE: {
+            if (!is_turn_to_startup_depot) { return; }
+            DriveORCA();
+            break;
+        }
+        case STATE_FAILURE: {
             break;
         }
         default: {
             LOGERR << "We can't be here, there's a bug!" << std::endl;
         }
     }
-
 }
 
 void CKheperaIVORCAFailureMQP::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading) {

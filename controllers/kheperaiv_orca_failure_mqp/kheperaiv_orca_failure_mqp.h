@@ -113,7 +113,7 @@ private:
     /* Pointer to the range and bearing sensor */
     CCI_RangeAndBearingSensor* m_pcRABS;
 
-    RVO::RVOSimulator *simulator;
+    RVO::RVOSimulator *simulator = new RVO::RVOSimulator();
 
     CRandom::CRNG *m_pcRNG;
 
@@ -137,10 +137,9 @@ private:
 
     /* The three possible states in which the controller can be */
     enum EState {
-        STATE_GOING_TO_POINT = 0,
-        STATE_NEW_POINT = 1,
-        AT_DEPOT = 2,
-        GOING_TO_DEPOT = 3,
+        STATE_NEW_POINT = 0,
+        STATE_DRIVE,
+        STATE_FAILURE,
     };
     EState m_eState;
 
