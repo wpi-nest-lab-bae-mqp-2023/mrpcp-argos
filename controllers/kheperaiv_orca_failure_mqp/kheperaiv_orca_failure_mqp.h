@@ -156,7 +156,6 @@ private:
     bool wasRotating = false;
     double drivingRotationTolerance = M_PI / 12.;  // M_PI/12. = +- 15. degrees
     double rotatingRotationTolerance = M_PI / 48.;  // M_PI/48. = +- 3.75 degrees
-    double nodeVisitationTolerance = 0.;
 
 };
 

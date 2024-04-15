@@ -171,7 +171,7 @@ CKheperaIVORCAFailureMQP::NORCAData CKheperaIVORCAFailureMQP::GetORCAData(CCI_Ra
 
 void CKheperaIVORCAFailureMQP::DriveORCA() {
     /* Reset simulation and calculate ORCA preferred velocity. */
-    nodeVisitationTolerance = KHEPERAIV_BASE_RADIUS / 2.;
+    double nodeVisitationTolerance = KHEPERAIV_BASE_RADIUS / 2.;
     ResetSim();
     auto prefVelVec = goal_pos - curr_pos;
     if (prefVelVec.Length() > maxRobotVelocity) { prefVelVec = prefVelVec.Normalize() * maxRobotVelocity; }
