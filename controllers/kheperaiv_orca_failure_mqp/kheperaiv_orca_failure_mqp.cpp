@@ -128,6 +128,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
         case STATE_FAILURE: {
             ApplyTwist(0., 0.);
             orcaVec.SetX(0.); orcaVec.SetY(0.);
+            goal_pos = curr_pos;
             since_failed_counter += 1;
             break;
         }
@@ -170,6 +171,7 @@ CKheperaIVORCAFailureMQP::NORCAData CKheperaIVORCAFailureMQP::GetORCAData(CCI_Ra
 
 void CKheperaIVORCAFailureMQP::DriveORCA() {
     /* Reset simulation and calculate ORCA preferred velocity. */
+    nodeVisitationTolerance = KHEPERAIV_BASE_RADIUS / 2.;
     ResetSim();
     auto prefVelVec = goal_pos - curr_pos;
     if (prefVelVec.Length() > maxRobotVelocity) { prefVelVec = prefVelVec.Normalize() * maxRobotVelocity; }
@@ -185,12 +187,17 @@ void CKheperaIVORCAFailureMQP::DriveORCA() {
                 i, nORCAData.GetCurrVel() +
                    dist * RVO::Vector2(std::cos(angle), std::sin(angle)));
 
+        // Increase tolerance if necessary
+        auto other_robot_to_goal_dist = (goal_pos-nORCAData.curr_pos).Length();
+        if (other_robot_to_goal_dist < 0.5) {
+            nodeVisitationTolerance += (0.5 - other_robot_to_goal_dist) / 5.;
+        }
+
     }
     simulator->doStep();
     orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(simulator->getNumAgents()-1)).Rotate(-yaw);
     // If close to goal point, get new point (tolerance is increased near depot to reduce traffic near depot)
-    auto tolerance = 0.05 + std::min(0.1 / ((goal_pos - depot_pos).Length() + 0.01), 0.25);
-    if (dist_err < tolerance) { m_eState = STATE_NEW_POINT; return; }
+    if (dist_err < nodeVisitationTolerance) { m_eState = STATE_NEW_POINT; return; }
     did_leave_from_startup_depot = (curr_pos.GetX() > depot_pos.GetX() && curr_pos.GetY() > depot_pos.GetY()) || (curr_pos.GetX() > depot_pos.GetX() - 0.3 && curr_pos.GetY() > depot_pos.GetY() + 0.3) || (curr_pos.GetX() > depot_pos.GetX() + 0.3 && curr_pos.GetY() > depot_pos.GetY() - 0.3) ;
     // If not, apply ORCA
     ApplyORCA(orcaVec);
@@ -205,7 +212,7 @@ void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
 //    std::cout << "orca_angle_err: " << orca_angle_err << std::endl;
 
     double vel_eff = 0.; double omega_eff = 0.;
-    double tolerance = wasRotating ? rotatingTolerance : drivingTolerance;
+    double tolerance = wasRotating ? rotatingRotationTolerance : drivingRotationTolerance;
     if (((orca_angle_err > tolerance) && (orca_angle_err < M_PI - tolerance)) || ((orca_angle_err < -tolerance) && (orca_angle_err > -M_PI + tolerance))) {
         if (abs(orca_angle_err) > M_PI_2) { orca_angle_err *= -1.; }
 //        std::cout << "in place rotation: " << std::endl;

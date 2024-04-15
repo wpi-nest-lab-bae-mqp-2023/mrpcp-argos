@@ -79,8 +79,10 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
         if (cController.since_failed_counter > 500) {
+            // Teleport robot, but also delay if can't place to the start location
+            bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
+            if (!success) { continue; }
             cController.Reset();
-            MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
             std::cout << "kp" << ki << " respawned!" << std::endl;
         }
     }
