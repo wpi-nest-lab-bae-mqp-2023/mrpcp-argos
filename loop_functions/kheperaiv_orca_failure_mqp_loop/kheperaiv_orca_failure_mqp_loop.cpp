@@ -44,7 +44,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
             // Populate the robots array and configure the robot
             cKheperaIVs.push_back(new CKheperaIVEntity(
-                    fmt::format("kp{}", robot_id),
+                    "kp" + std::to_string(robot_id),
                     "kheperaiv_orca_failure_mqp_controller",
                     CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0),
                     random_quat,
@@ -70,7 +70,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     auto t = std::time(nullptr);
     auto tm = *std::localtime(&t);
     osss << std::put_time(&tm, "%Y_%m_%d_%H_%M_%S");
-    position_logging_output_file_w_stamp = (std::filesystem::path(position_logging_output_folder) / fmt::format("{}_position_logs.txt", osss.str())).string();
+    position_logging_output_file_w_stamp = (std::filesystem::path(position_logging_output_folder) / (osss.str()+"_position_logs.txt")).string();
 
     std::cout << "position_logging_output_file: " << position_logging_output_file << std::endl;
     std::cout << "position_logging_output_file_w_stamp: " << position_logging_output_file_w_stamp << std::endl;
@@ -192,4 +192,3 @@ void CKheperaIVORCAMQPLoop::CalculateObstacles() {
 
 
 REGISTER_LOOP_FUNCTIONS(CKheperaIVORCAMQPLoop, "kheperaiv_orca_failure_mqp_loop")
-

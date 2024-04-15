@@ -8,7 +8,6 @@
 
 #include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
 #include <argos3/plugins/simulator/entities/box_entity.h>
-#include <fmt/core.h>
 
 #include "controllers/kheperaiv_orca_failure_mqp/kheperaiv_orca_failure_mqp.h"
 #include "mqp_http_client.h"

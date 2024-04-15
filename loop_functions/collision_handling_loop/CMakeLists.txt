@@ -2,7 +2,6 @@ link_directories(${CMAKE_BINARY_DIR}/controllers/collision_handling)
 include_directories(${ARGOS_QTOPENGL_INCLUDE_DIRS})
 find_package(CURL REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
-find_package(fmt REQUIRED)
 
 add_library(collision_handling_loop SHARED
         mqp_http_client.h
@@ -19,6 +18,5 @@ target_link_libraries(collision_handling_loop
         argos3plugin_simulator_footbot
         ${CURL_LIBRARIES}
         nlohmann_json::nlohmann_json
-        fmt::fmt
         argos3plugin_simulator_qtopengl
         ${ARGOS_QTOPENGL_LIBRARIES})

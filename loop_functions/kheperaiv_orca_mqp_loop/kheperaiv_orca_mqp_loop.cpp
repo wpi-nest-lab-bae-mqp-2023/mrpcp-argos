@@ -37,7 +37,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
             // Populate the robots array and configure the robot
             cKheperaIVs.push_back(new CKheperaIVEntity(
-                    fmt::format("kp{}", robot_id),
+                    "kp" + std::to_string(robot_id),
                     "kheperaiv_orca_mqp_controller",
                     CVector3(depot[0] - i * delta, depot[1] - j * delta, 0),
                     random_quat,
@@ -150,4 +150,3 @@ void CKheperaIVORCAMQPLoop::CalculateObstacles() {
 
 
 REGISTER_LOOP_FUNCTIONS(CKheperaIVORCAMQPLoop, "kheperaiv_orca_mqp_loop")
-

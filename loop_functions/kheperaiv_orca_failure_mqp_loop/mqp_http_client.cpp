@@ -2,8 +2,6 @@
 
 #include <iostream>
 #include <unistd.h>               // for linux
-#include <fmt/core.h>
-
 
 using json = nlohmann::json;
 
@@ -47,14 +45,7 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<doub
                             std::string mode) {
 
 //    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
-    std::string req_url = fmt::format("{}/solve?k={}&n_a={}&fcr={}&rp={}&ssd={}&mode={}",
-                                      host,
-                                      k,
-                                      n_a,
-                                      fcr,
-                                      rp,
-                                      ssd,
-                                      mode);
+    std::string req_url = host+"/solve?k="+std::to_string(k)+"&n_a=" + std::to_string(int(n_a)) + "&fcr=" + std::to_string(fcr) +  "&ssd=" + std::to_string(int(ssd)) + "&mode=" + mode + "&rp=" + std::to_string(int(rp));
 
     json data;
     mqp_packets::res mqp_res;
@@ -86,5 +77,3 @@ void mqp_http_client::printPath(std::vector<std::vector<std::vector<double>>> pa
         }
     }
 }
-
-

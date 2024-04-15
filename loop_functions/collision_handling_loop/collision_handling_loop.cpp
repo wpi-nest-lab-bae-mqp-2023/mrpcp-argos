@@ -6,7 +6,6 @@
 #include <sstream>
 
 #include <list>
-#include <fmt/core.h>
 
 using namespace argos;
 
@@ -82,13 +81,13 @@ void CollisionHandlingLoop::Init(TConfigurationNode& t_tree) {
                   CVector3(d_x - i+j * delta, -1.7, 0),
                   random_quat));*/
 
-
+          /*
           cKheperaIVs.push_back(new CKheperaIVEntity(
                   fmt::format("ch-{}", robot_id),
                   "ch",
                   CVector3(3 - j * delta, -2 - i * delta, 0),
                   random_quat));
-
+                  */
           /*
           cKheperaIVs.push_back(new CKheperaIVEntity(
                   fmt::format("ch-{}", robot_id),

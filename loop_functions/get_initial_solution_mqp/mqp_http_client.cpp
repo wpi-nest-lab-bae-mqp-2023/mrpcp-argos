@@ -2,7 +2,6 @@
 
 #include <iostream>
 #include <unistd.h>               // for linux
-#include <fmt/core.h>
 
 
 using json = nlohmann::json;
@@ -46,15 +45,8 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<floa
                             float ssd,
                             std::string mode) {
 
-//    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
-    std::string req_url = fmt::format("{}/solve?k={}&nk={}&fcr={}&fr={}&ssd={}&mode={}",
-                                      host,
-                                      k,
-                                      nk,
-                                      fcr,
-                                      fr,
-                                      ssd,
-                                      mode);
+    /*
+    std::string req_url = host+"/solve?k="+std::to_string(k)+"&n_a=" + std::to_string(int(n_a)) + "&fcr=" + std::to_string(fcr) +  "&ssd=" + std::to_string(int(ssd)) + "&mode=" + mode + "&rp=" + std::to_string(int(rp));
 
     json data;
     mqp_packets::res mqp_res;
@@ -65,7 +57,7 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<floa
     }
 
     *path_arr = data["robot_world_path"].get<std::vector<std::vector<std::vector<std::vector<float>>>>>();
-
+    */
 //    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
     return true;
 }
@@ -86,5 +78,3 @@ void mqp_http_client::printPath(std::vector<std::vector<std::vector<float>>> pat
         }
     }
 }
-
-

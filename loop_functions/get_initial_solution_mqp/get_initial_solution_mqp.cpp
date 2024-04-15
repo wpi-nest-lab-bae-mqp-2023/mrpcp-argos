@@ -5,7 +5,6 @@
 
 #include <sstream>
 #include <list>
-#include <fmt/core.h>
 
 
 using namespace argos;
@@ -73,7 +72,7 @@ void GetInitialSolutionMQP::Init(TConfigurationNode& t_tree) {
 
             // Populate the robots array and configure the robot
             cKheperaIVs.push_back(new CKheperaIVEntity(
-                    fmt::format("kheperaiv-{}", robot_id),
+                    "kheperaiv-"+std::to_string(robot_id),
                     "kheperaiv_mqp_controller",
                     CVector3(depot_x - i * delta, depot_y - j * delta, 0),
                     random_quat));

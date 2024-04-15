@@ -47,8 +47,9 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
 //            }
 
             // Populate the robots array and configure the robot
+
             cKheperaIVs.push_back(new CKheperaIVEntity(
-                    fmt::format("kp{}", robot_id),
+                    "kp" + std::to_string(robot_id),
                     "kheperaiv_orca_controller",
                     CVector3(center_x- i * delta_1, center_y - j * delta_2, 0),
                     random_quat,
