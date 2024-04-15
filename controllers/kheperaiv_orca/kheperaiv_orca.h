@@ -86,6 +86,8 @@ public:
     std::vector<std::vector<RVO::Vector2>> obstacles = std::vector<std::vector<RVO::Vector2>>();
     double rab_range;
 
+    double stepsInWorld = 0;
+
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
     void BroadcastORCA();
