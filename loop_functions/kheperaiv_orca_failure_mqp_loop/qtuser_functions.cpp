@@ -15,9 +15,7 @@ void CQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
     auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(c_entity.GetControllableEntity().GetController());
 //    auto curr_robot_pos = CVector3(cController.curr_pos.GetX(), cController.curr_pos.GetY(), 0.);
     if (cController.since_failed_counter) {
-        if (((int)(cController.since_failed_counter / 10) % 2) == 0) {
-            DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[3]);
-        }
+        DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[3]);
     } else {
         DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[60]);
     }
@@ -54,7 +52,7 @@ void CQTUserFunctions::drawPath(std::vector<std::vector<std::vector<std::vector<
             for (int pointi = 0; pointi < subtouri.size(); ++pointi) {
                 int pointj = pointi + 1;
                 if (pointj == subtouri.size()) { pointj = 0; }
-                DrawCircle(CVector3(subtouri[pointi][0], subtouri[pointi][1], 0.01), CQuaternion(), 0.05);
+                DrawCircle(CVector3(subtouri[pointi][0], subtouri[pointi][1], 0.01), CQuaternion(), 0.05, colors[9]);
                 DrawRay(CRay3(CVector3(subtouri[pointi][0], subtouri[pointi][1], 0.01),
                               CVector3(subtouri[pointj][0], subtouri[pointj][1], 0.01)),
                         color, ki);

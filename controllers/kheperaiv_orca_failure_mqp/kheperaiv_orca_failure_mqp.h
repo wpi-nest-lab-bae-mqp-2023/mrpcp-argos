@@ -10,6 +10,8 @@
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_actuator.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_differential_steering_sensor.h>
 #include <argos3/plugins/robots/generic/control_interface/ci_positioning_sensor.h>
+/* Definition of the LEDs actuator */
+#include <argos3/plugins/robots/generic/control_interface/ci_leds_actuator.h>
 /* Definition of the range and bearing actuator */
 #include <argos3/plugins/robots/generic/control_interface/ci_range_and_bearing_actuator.h>
 /* Definition of the range and bearing sensor */
@@ -111,6 +113,8 @@ private:
     CCI_DifferentialSteeringActuator* m_pcWheelsA;
     CCI_DifferentialSteeringSensor* m_pcWheelsS;
     CCI_PositioningSensor* m_pcPosSens;
+    /* Pointer to the LEDs actuator */
+    CCI_LEDsActuator* m_pcLEDs;
 
     /* Pointer to the range and bearing actuator */
     CCI_RangeAndBearingActuator*  m_pcRABA;

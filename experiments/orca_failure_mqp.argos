@@ -19,6 +19,7 @@
       <actuators>
         <differential_steering implementation="default" />
         <range_and_bearing implementation="default" />
+        <leds implementation="default" medium="leds" />
       </actuators>
 
       <!-- Sensors -->
@@ -71,6 +72,7 @@
   <!-- ********* -->
   <media>
     <range_and_bearing id="rab" check_occlusions="false" />
+    <led id="leds" />
   </media>
 
   <!-- ****************** -->
