@@ -52,6 +52,10 @@ void CKheperaIVORCAFailureMQP::Reset(){
 
     vel_ctrl.reset();
     theta_ctrl.reset();
+
+    since_failed_counter = 0;
+    is_turn_to_startup_depot = false;
+    did_leave_from_startup_depot = false;
 }
 
 void CKheperaIVORCAFailureMQP::ResetSim() {
@@ -113,9 +117,9 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             if (!is_turn_to_startup_depot) { return; }
             DriveORCA();
 
-            // Fail with a set probability rate
-            if (m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
-                std::cout << "id: " << id << " failed!" << std::endl;
+            // Fail with a set probability rate (make sure the robot isn't in the depot)
+            if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
+                std::cout << "kp" << id << " failed!" << std::endl;
                 since_failed_counter = 0;
                 m_eState = STATE_FAILURE;
             }
@@ -123,6 +127,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
         }
         case STATE_FAILURE: {
             ApplyTwist(0., 0.);
+            orcaVec.SetX(0.); orcaVec.SetY(0.);
             since_failed_counter += 1;
             break;
         }
@@ -186,7 +191,7 @@ void CKheperaIVORCAFailureMQP::DriveORCA() {
     // If close to goal point, get new point (tolerance is increased near depot to reduce traffic near depot)
     auto tolerance = 0.05 + std::min(0.1 / ((goal_pos - depot_pos).Length() + 0.01), 0.25);
     if (dist_err < tolerance) { m_eState = STATE_NEW_POINT; return; }
-    if (goal_pos != depot_pos && (curr_pos - depot_pos).Length() > 0.3) { did_leave_from_startup_depot = true; }
+    did_leave_from_startup_depot = (curr_pos.GetX() > depot_pos.GetX() && curr_pos.GetY() > depot_pos.GetY()) || (curr_pos.GetX() > depot_pos.GetX() - 0.3 && curr_pos.GetY() > depot_pos.GetY() + 0.3) || (curr_pos.GetX() > depot_pos.GetX() + 0.3 && curr_pos.GetY() > depot_pos.GetY() - 0.3) ;
     // If not, apply ORCA
     ApplyORCA(orcaVec);
 //    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;

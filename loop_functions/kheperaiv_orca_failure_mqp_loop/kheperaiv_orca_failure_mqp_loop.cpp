@@ -21,12 +21,12 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
     //    unsigned long num_of_robots = 3;
     num_of_robots = path_arr.size();
-    unsigned long num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
+    num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
 
 //    double depot_x = path_arr[0][0][0][0];
 //    double depot_y = path_arr[0][0][0][1];
     depot = path_arr[0][0][0];
-    double delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
+    delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
     float fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
 
@@ -41,7 +41,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
             cKheperaIVs.push_back(new CKheperaIVEntity(
                     fmt::format("kp{}", robot_id),
                     "kheperaiv_orca_failure_mqp_controller",
-                    CVector3(depot[0] - i * delta, depot[1] - j * delta, 0),
+                    CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0),
                     random_quat,
                     rab_range));
             AddEntity(*cKheperaIVs[robot_id]);
@@ -59,43 +59,30 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 }
 
 void CKheperaIVORCAMQPLoop::PreStep() {
-//    std::cout << "depot_turn_robot_id" << depot_turn_robot_id << std::endl;
-
-//    for (int i = 0; i < num_of_robots; ++i) {
-////        CFootBotEntity* pcFB = any_cast<CFootBotEntity*>(it->second);
-//
-//        auto cKheperaIV = &dynamic_cast<CKheperaIVEntity &>(GetSpace().GetEntity(fmt::format("kp{}", i)));
-//        auto &cController = dynamic_cast<CKheperaIVORCAMQP &>(cKheperaIV->GetControllableEntity().GetController());
-//        if (cController.id == depot_turn_robot_id) {
-//            cController.is_turn_to_startup_depot = true;
-//        }
-////        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
-//        if (cController.id == depot_turn_robot_id && cController.goal_pos.GetX() != depot[0] && cController.goal_pos.GetY() != depot[1]) {
-//            depot_turn_robot_id += 1;
-//        }
-//    }
-
-//    CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("kheperaiv");
-//
-//    for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
-//        it != m_cFootbots.end();
-//        ++it) {
-//        /* Get handle to foot-bot entity and controller */
-//        CFootBotEntity &cFootBot = *any_cast<CFootBotEntity *>(it->second);
-//
-//    }
-
-
+    // Start robots in order at start
+    unsigned int depot_turn_robot_id = 0;
     for (auto cKheperaIV : cKheperaIVs) {
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
         if (cController.id == depot_turn_robot_id) {
             cController.is_turn_to_startup_depot = true;
         }
 //        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
-        if (cController.id == depot_turn_robot_id && cController.goal_pos != cController.depot_pos && cController.did_leave_from_startup_depot) {
+        if (cController.id == depot_turn_robot_id && cController.did_leave_from_startup_depot) {
             depot_turn_robot_id += 1;
         }
+    }
 
+    // Respawn robots after some time period
+    for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
+        int i = floor(ki / num_of_robots_per_side);
+        int j = ki % num_of_robots_per_side;
+        auto cKheperaIV = cKheperaIVs[ki];
+        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+        if (cController.since_failed_counter > 500) {
+            cController.Reset();
+            MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
+            std::cout << "kp" << ki << " respawned!" << std::endl;
+        }
     }
 }
 
@@ -131,6 +118,10 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
 //    mqp_http_client::printPaths(path_arr);
 
 }
+
+void CKheperaIVORCAMQPLoop::Reset() {
+}
+
 
 void CKheperaIVORCAMQPLoop::CalculateObstacles() {
     CSpace::TMapPerType& tBoxMap = GetSpace().GetEntitiesByType("box");

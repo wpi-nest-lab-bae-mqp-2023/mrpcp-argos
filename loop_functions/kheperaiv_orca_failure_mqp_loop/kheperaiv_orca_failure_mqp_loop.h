@@ -30,6 +30,7 @@ public:
 
     virtual void Init(TConfigurationNode& t_node);
     virtual void PreStep();
+    virtual void Reset();
 
     void RequestPath(TConfigurationNode& t_tree);
     void CalculateObstacles();
@@ -38,8 +39,10 @@ public:
     std::vector<std::vector<RVO::Vector2>> obstacles;
     std::vector<CKheperaIVEntity*> cKheperaIVs;
     std::vector<double> depot;
-    unsigned int depot_turn_robot_id = 0;
     unsigned long num_of_robots;
+    double delta;
+    double depot_offset = 0.01;
+    unsigned long num_of_robots_per_side;
 
 };
 

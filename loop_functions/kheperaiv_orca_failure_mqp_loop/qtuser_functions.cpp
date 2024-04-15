@@ -12,21 +12,23 @@ CQTUserFunctions::CQTUserFunctions() :
 /****************************************/
 
 void CQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
-    DrawText(CVector3(0.0, 0.0, 0.2), c_entity.GetId());
     auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(c_entity.GetControllableEntity().GetController());
 //    auto curr_robot_pos = CVector3(cController.curr_pos.GetX(), cController.curr_pos.GetY(), 0.);
+    if (cController.since_failed_counter) {
+        if (((int)(cController.since_failed_counter / 10) % 2) == 0) {
+            DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[3]);
+        }
+    } else {
+        DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[60]);
+    }
+
     auto curr_orca_vec = CVector3(cController.orcaVec.GetX(), cController.orcaVec.GetY(), 0.);
     DrawRay(CRay3(CVector3(0., 0., 0.04),
                   curr_orca_vec + CVector3(0., 0., 0.04)),
             CColor(0xFF, 0xFA, 0xFE, 250), 3);
 
-    if (cController.since_failed_counter) {
-        if (((int)(cController.since_failed_counter / 10) % 2) == 0) {
-            DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), 0.15, colors[3]);
-        }
-    } else {
-        DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), 0.15, colors[60]);
-    }
+    DrawText(CVector3(0.0, 0.0, 0.5), c_entity.GetId());
+
 }
 
 void CQTUserFunctions::DrawInWorld() {
