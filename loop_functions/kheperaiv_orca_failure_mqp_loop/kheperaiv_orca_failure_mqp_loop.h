@@ -43,6 +43,7 @@ public:
     double delta;
     double depot_offset = 0.01;
     unsigned long num_of_robots_per_side;
+    double frt;
 
 };
 

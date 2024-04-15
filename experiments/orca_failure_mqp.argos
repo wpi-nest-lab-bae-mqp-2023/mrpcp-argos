@@ -97,8 +97,10 @@
     "n_a": number of nodes to have on an axis,
     "fcr": fuel-capacity-ratio (the fuel capacity of the robots relative to the roundtrip cost between the furthest node and the depot),
     "rp": redundancy parameter (the solution will be able to tolerate rp-1 number of robots before a recalculation is needed ),
-    "ssd": square-side-distance (length of the side of the square arena),
-    "mode": "m" for MILP-based solver, "h1" for Yasar's heuristic, "h2" for Cam's heuristic,
+    "ssd": square-side-distance (length of the side of the square arena in meters),
+    "mode": "m" for MILP-based solver, "h1" for Yaşar's heuristic, "h2" for Cam's heuristic,
+    "fr": failure probability rate (the probability of failure of a robot for each time step/tick),
+    "frt": failure recovery time (the time it takes for a robot to teleport to depot in seconds),
 -->
     <problem_params host="http://127.0.0.1:5000"
                     k="8"
@@ -107,7 +109,8 @@
                     rp="3"
                     ssd="3"
                     mode="h1"
-                    fr="0.001" />
+                    fr="0.001"
+                    frt="50" />
 
     <arena_params initial-robot-spacing="0.3" />
 

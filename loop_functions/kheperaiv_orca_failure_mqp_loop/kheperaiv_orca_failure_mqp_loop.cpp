@@ -27,8 +27,10 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 //    double depot_y = path_arr[0][0][0][1];
     depot = path_arr[0][0][0];
     delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
-    float fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
+    double fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
+    frt = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "frt", frt, frt);
+    if (frt < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (frt<0): Select frt >= 0."); }
 
     for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
         for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
@@ -78,7 +80,8 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         int j = ki % num_of_robots_per_side;
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
-        if (cController.since_failed_counter > 500) {
+
+        if (cController.since_failed_counter > frt / (10. * GetSimulator().GetPhysicsEngines()[0]->GetPhysicsClockTick())) {
             // Teleport robot, but also delay if can't place to the start location
             bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
             if (!success) { continue; }
