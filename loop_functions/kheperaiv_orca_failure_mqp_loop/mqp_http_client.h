@@ -21,10 +21,10 @@ class mqp_http_client {
 public:
     static bool solve(std::vector<std::vector<std::vector<std::vector<double>>>> *path_arr,
                       std::string host,
-                      int k,
-                      double n_a,
+                      unsigned int k,
+                      unsigned int n_a,
                       double fcr,
-                      double rp,
+                      unsigned int rp,
                       double ssd,
                       std::string mode);
     static void printPaths(std::vector<std::vector<std::vector<std::vector<double>>>> path_arr);

@@ -35,29 +35,33 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     if (frt < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (frt<0): Select frt >= 0."); }
     position_logging_output_folder = ""; GetNodeAttributeOrDefault(GetNode(t_tree, "position_logging_params"), "output-folder", position_logging_output_folder, position_logging_output_folder);
 
-    for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
-        for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
-            unsigned long robot_id = i * num_of_robots_per_side + j;
-            if (robot_id >= num_of_robots) { break; }
+    if (GetSimulator().GetPhysicsEngines()[0]->GetId() == "dyn2d") {
+        for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
+            for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
+                unsigned long robot_id = i * num_of_robots_per_side + j;
+                if (robot_id >= num_of_robots) { break; }
 
-            random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
+                random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
 
-            // Populate the robots array and configure the robot
-            cKheperaIVs.push_back(new CKheperaIVEntity(
-                    "kp" + std::to_string(robot_id),
-                    "kheperaiv_orca_failure_mqp_controller",
-                    CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0),
-                    random_quat,
-                    rab_range));
-            AddEntity(*cKheperaIVs[robot_id]);
+                // Populate the robots array and configure the robot
+                cKheperaIVs.push_back(new CKheperaIVEntity(
+                        "kp" + std::to_string(robot_id),
+                        "kheperaiv_orca_failure_mqp_controller",
+                        CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0),
+                        random_quat,
+                        rab_range));
+                AddEntity(*cKheperaIVs[robot_id]);
 
-            auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
-            cController.id = robot_id;
-            cController.fr = fr;
-            cController.obstacles = obstacles;
-            cController.rab_range = rab_range;
-            cController.SetPath(path_arr[robot_id]);
+                auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
+                cController.id = robot_id;
+                cController.fr = fr;
+                cController.obstacles = obstacles;
+                cController.rab_range = rab_range;
+                cController.SetPath(path_arr[robot_id]);
+            }
         }
+    } else {
+
     }
 
     // If the folder doesn't exist, create it
@@ -80,7 +84,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     std::ofstream oss2;
     oss2.open(position_logging_output_file_w_stamp, std::ios::out);
     ticks = 0;
-    std::cout << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
+    std::cout << "Ran init in kheperaiv_orca_failure_mqp_loop.cpp" << std::endl;
 }
 
 void CKheperaIVORCAMQPLoop::PreStep() {
@@ -137,17 +141,17 @@ void CKheperaIVORCAMQPLoop::PreStep() {
 
 
 void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
-    std::cout << "Setting up in get_initial_solution_mqp.cpp" << std::endl;
+    std::cout << "Setting up in kheperaiv_orca_failure_mqp_loop.cpp" << std::endl;
 
     std::string host; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
-    int k = 0; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
+    unsigned int k = 0; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
     if (k <= 0) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (k<=0): Select k > 0."); }
-    float n_a = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "n_a", n_a, n_a);
-    if (n_a <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (n_a<=0): Select n_a > 0."); }
+    unsigned int n_a = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "n_a", n_a, n_a);
+    if (n_a < 2) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (n_a<2): Select n_a >= 2"); }
     float fcr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
     if (fcr <= 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fcr<=1): Select fcr > 1."); }
-    float rp = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "rp", rp, rp);
-    if (rp < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (rp<0): Select rp >= 0."); }
+    unsigned int rp = 1; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "rp", rp, rp);
+    if (rp < 1) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (rp<1): Select rp >= 1."); }
     float ssd = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
     if (ssd <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (ssd<=0): Select ssd > 0."); }
     std::string mode; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);

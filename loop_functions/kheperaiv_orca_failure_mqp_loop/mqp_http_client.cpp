@@ -37,10 +37,10 @@ bool mqp_http_client::make_http_req(nlohmann::json *data, const std::string& req
 
 bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<double>>>> *path_arr,
                             std::string host,
-                            int k,
-                            double n_a,
+                            unsigned int k,
+                            unsigned int n_a,
                             double fcr,
-                            double rp,
+                            unsigned int rp,
                             double ssd,
                             std::string mode) {
 
