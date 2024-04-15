@@ -45,6 +45,12 @@ public:
     unsigned long num_of_robots_per_side;
     double frt;
 
+    string position_logging_output_folder;
+    unsigned int ticks=0;
+
+    string position_logging_output_file;
+    string position_logging_output_file_w_stamp;
+
 };
 
 #endif

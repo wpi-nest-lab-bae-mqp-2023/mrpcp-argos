@@ -114,6 +114,8 @@
 
     <arena_params initial-robot-spacing="0.3" />
 
+    <position_logging_params output-folder="./output/" />
+
   </loop_functions>
 
 </argos-configuration>

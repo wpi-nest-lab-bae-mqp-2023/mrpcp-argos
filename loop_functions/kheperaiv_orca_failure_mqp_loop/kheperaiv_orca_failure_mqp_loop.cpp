@@ -3,6 +3,8 @@
 //
 
 #include "kheperaiv_orca_failure_mqp_loop.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 CKheperaIVORCAMQPLoop::CKheperaIVORCAMQPLoop() {
 
@@ -31,6 +33,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
     frt = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "frt", frt, frt);
     if (frt < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (frt<0): Select frt >= 0."); }
+    position_logging_output_folder = ""; GetNodeAttributeOrDefault(GetNode(t_tree, "position_logging_params"), "output-folder", position_logging_output_folder, position_logging_output_folder);
 
     for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
         for (unsigned long j = 0; j < num_of_robots_per_side; ++j) {
@@ -57,6 +60,26 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
         }
     }
 
+    // If the folder doesn't exist, create it
+    struct stat info;
+    if (!(info.st_mode & S_IFDIR))
+        std::filesystem::create_directory(position_logging_output_folder);
+
+    position_logging_output_file = (std::filesystem::path(position_logging_output_folder) / "position_logs.txt").string();
+    std::ostringstream osss;
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    osss << std::put_time(&tm, "%Y_%m_%d_%H_%M_%S");
+    position_logging_output_file_w_stamp = (std::filesystem::path(position_logging_output_folder) / fmt::format("{}_position_logs.txt", osss.str())).string();
+
+    std::cout << "position_logging_output_file: " << position_logging_output_file << std::endl;
+    std::cout << "position_logging_output_file_w_stamp: " << position_logging_output_file_w_stamp << std::endl;
+
+    std::ofstream oss1;
+    oss1.open(position_logging_output_file, std::ios::out);
+    std::ofstream oss2;
+    oss2.open(position_logging_output_file_w_stamp, std::ios::out);
+    ticks = 0;
     std::cout << "Ran init in get_initial_solution_mqp.cpp" << std::endl;
 }
 
@@ -89,6 +112,26 @@ void CKheperaIVORCAMQPLoop::PreStep() {
             std::cout << "kp" << ki << " respawned!" << std::endl;
         }
     }
+
+    // Log positions to an output file
+    std::string line = "";
+    for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
+        auto cKheperaIV = cKheperaIVs[ki];
+        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+
+        CVector2 cPos;
+        cPos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+                 cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+
+        line = line + std::to_string(cPos.GetX()) + "," + std::to_string(cPos.GetY()) + "," + std::to_string(ticks * (10. * GetSimulator().GetPhysicsEngines()[0]->GetPhysicsClockTick())) + ";";
+    }
+    std::ofstream oss1;
+    oss1.open(position_logging_output_file, std::ios::app);
+    oss1 << line << std::endl;
+    std::ofstream oss2;
+    oss2.open(position_logging_output_file_w_stamp, std::ios::app);
+    oss2 << line << std::endl;
+    ticks += 1;
 }
 
 
