@@ -69,5 +69,49 @@ void CKheperaIVORCALoop::Init(TConfigurationNode& t_node) {
     }
 }
 
-REGISTER_LOOP_FUNCTIONS(CKheperaIVORCALoop, "kheperaiv_orca_loop")
 
+
+void CKheperaIVORCALoop::PreStep() {
+   std::string line = "";
+   CSpace::TMapPerType& m_cFootbots = GetSpace().GetEntitiesByType("kheperaiv");
+
+   for(CSpace::TMapPerType::iterator it = m_cFootbots.begin();
+       it != m_cFootbots.end();
+       ++it) {
+
+      CKheperaIVEntity& cFootBot = *any_cast<CKheperaIVEntity*>(it->second);
+      CKheperaIVORCA &cController = dynamic_cast<CKheperaIVORCA &>(cFootBot.GetControllableEntity().GetController());
+
+      CVector2 cPos;
+      cPos.Set(cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+               cFootBot.GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+
+       line = line + std::to_string(cPos.GetX()) + "," + std::to_string(cPos.GetY()) + "," + std::to_string(cController.stepsInWorld) + ";";
+
+       cController.stepsInWorld += 1;
+   }
+
+   x += 1;
+
+
+   unsigned long robot_id = 0;
+   unsigned long new_robot_id = 5;
+
+   //if(x > (rand() % 10000) && onlyOneFailure != 1){ //failure happens
+
+   if(x > 100000 && onlyOneFailure != 1){ //failure happens
+     onlyOneFailure = 1;
+     LOGERR << "Failure happens" << std::endl;
+     k = k-1;
+
+     RemoveEntity("kp"+std::to_string(rand() % k));
+
+     //mqp_http_client::solve(&path_arr, host, k, n_a, fcr, fr, ssd, "h2", rp); //convert to recalculate
+
+   }
+
+   data_parsing::WriteLine(line);
+
+}
+
+REGISTER_LOOP_FUNCTIONS(CKheperaIVORCALoop, "kheperaiv_orca_loop")
