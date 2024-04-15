@@ -4,7 +4,7 @@ find_package(CURL REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 find_package(fmt REQUIRED)
 
-add_library(collision_handling_loop MODULE
+add_library(collision_handling_loop SHARED
         mqp_http_client.h
         collision_handling_loop.h
         data_parsing.h

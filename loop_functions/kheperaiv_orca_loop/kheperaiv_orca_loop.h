@@ -13,8 +13,8 @@
 
 #include <controllers/kheperaiv_orca/kheperaiv_orca.h>
 
-#include "loop_functions/collision_handling_loop/mqp_http_client.h"
-#include "loop_functions/collision_handling_loop/data_parsing.h"
+#include <loop_functions/collision_handling_loop/mqp_http_client.h>
+#include <loop_functions/collision_handling_loop/data_parsing.h>
 
 /*
  * All the ARGoS stuff in the 'argos' namespace.
