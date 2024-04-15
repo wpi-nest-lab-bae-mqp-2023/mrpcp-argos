@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
+#include <cmath>
 
 using namespace std;
 
