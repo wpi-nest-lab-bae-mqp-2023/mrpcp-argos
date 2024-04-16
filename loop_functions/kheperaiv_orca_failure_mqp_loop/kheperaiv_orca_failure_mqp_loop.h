@@ -52,12 +52,12 @@ public:
 
     //problem parameters
     std::string host;
-    int k = 0;
-    float n_a = 0.;
+    unsigned int k = 0;
+    unsigned int n_a = 0;
     float fcr = 0.;
     float fr = 0.;
     float ssd = 0.;
-    int rp = 0;
+    unsigned int rp = 0;
     std::string mode;
 };
 
