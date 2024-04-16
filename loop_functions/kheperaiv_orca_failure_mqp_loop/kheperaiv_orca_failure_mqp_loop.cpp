@@ -137,11 +137,11 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
 
-        if(cController.since_failed_counter == 1){
-          //std::string req_url = host+"/recalculate?job_id="+std::to_string(k)+"_" + std::to_string(int(n_a))  +  "_" + std::to_string(int(ssd)) + "_" + std::to_string(fcr) + "_" + std::to_string(int(rp)) + "_m&curr_robots_pos=" + curr_robots_pos + "&curr_fuel_levels=" + curr_fuel_levels;
-
-          //std::cout << req_url << std::endl;
+        if(cController.since_failed_counter == 5){
           mqp_http_client::recalculate(&path_arr, host, k, n_a, fcr, rp, ssd, mode, curr_fuel_levels, curr_robots_pos);
+          for (int robot_id = 0; robot_id < cKheperaIVs.size(); ++robot_id) {
+            cController.SetPath(path_arr[robot_id]);
+          }
         }
         else if (cController.since_failed_counter > frt / (10. * GetSimulator().GetPhysicsEngines()[0]->GetPhysicsClockTick())) {
             // Teleport robot, but also delay if can't place to the start location
@@ -151,8 +151,6 @@ void CKheperaIVORCAMQPLoop::PreStep() {
 
             std::cout << "kp" << ki << " respawned!" << std::endl;
         }
-
-
     }
 
 
