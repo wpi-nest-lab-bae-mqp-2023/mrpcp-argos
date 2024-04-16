@@ -19,6 +19,7 @@
       <actuators>
         <differential_steering implementation="default" />
         <range_and_bearing implementation="default" />
+        <leds implementation="default" medium="leds" />
       </actuators>
 
       <!-- Sensors -->
@@ -41,20 +42,20 @@
     <box id="wall_left" size="3.5,0.1,0.5" movable="false">
       <body position="0,1.75,0" orientation="0,0,0" />
     </box>
-    <box id="wall_right" size="3,0.1,0.5" movable="false">
-      <body position="0.25,-1.75,0" orientation="0,0,0" />
+    <box id="wall_right" size="2.75,0.1,0.5" movable="false">
+      <body position="0.35,-1.75,0" orientation="0,0,0" />
     </box>
     <box id="wall_upper" size="0.1,3.5,0.5" movable="false">
       <body position="1.75,0,0" orientation="0,0,0" />
     </box>
-    <box id="wall_bottom" size="0.1,3,0.5" movable="false">
-      <body position="-1.75,0.25,0" orientation="0,0,0" />
+    <box id="wall_bottom" size="0.1,2.75,0.5" movable="false">
+      <body position="-1.75,0.35,0" orientation="0,0,0" />
     </box>
-    <box id="wall_depot_left" size="0.5,0.1,0.5" movable="false">
-      <body position="-2,-1.25,0" orientation="0,0,0" />
+    <box id="wall_depot_left" size="0.75,0.1,0.5" movable="false">
+      <body position="-2.125,-1.025,0" orientation="0,0,0" />
     </box>
-    <box id="wall_depot_upper" size="0.1,0.5,0.5" movable="false">
-      <body position="-1.25,-2,0" orientation="0,0,0" />
+    <box id="wall_depot_upper" size="0.1,0.75,0.5" movable="false">
+      <body position="-1.025,-2.125,0" orientation="0,0,0" />
     </box>
 
   </arena>
@@ -63,7 +64,17 @@
   <!-- * Physics engines * -->
   <!-- ******************* -->
   <physics_engines>
+    <!--  Sim  -->
     <dynamics2d id="dyn2d" />
+    <!--  Real  -->
+<!--    <tracking>-->
+<!--      <updaters>-->
+<!--        <vicon_updater/>-->
+<!--      </updaters>-->
+<!--      <assigners>-->
+<!--        <Khepera default="kheperaiv_orca_failure_mqp_controller"/>-->
+<!--      </assigners>-->
+<!--    </tracking>-->
   </physics_engines>
 
   <!-- ********* -->
@@ -71,6 +82,7 @@
   <!-- ********* -->
   <media>
     <range_and_bearing id="rab" check_occlusions="false" />
+    <led id="leds" />
   </media>
 
   <!-- ****************** -->
@@ -82,7 +94,7 @@
                       label="qtuser_functions" />
       <camera>
         <placements>
-          <placement index="0" position="0,0,8.14689" look_at="0,0,0" up="1,0,0" lens_focal_length="50" />
+          <placement index="0" position="0,0,9" look_at="0,0,0" up="1,0,0" lens_focal_length="50" />
         </placements>
       </camera>
     </qt-opengl>
@@ -102,7 +114,7 @@
     "fr": failure probability rate (the probability of failure of a robot for each time step/tick),
     "frt": failure recovery time (the time it takes for a robot to teleport to depot in seconds),
 -->
-    <problem_params host="http://127.0.0.1:5000"
+    <problem_params host="http://192.168.1.120:8000"
                     k="8"
                     n_a="8"
                     fcr="1.5"
@@ -116,6 +128,7 @@
 
     <position_logging_params output-folder="./output/" />
 
+    <sub_loop_function label="BaseNetworking" />
   </loop_functions>
 
 </argos-configuration>

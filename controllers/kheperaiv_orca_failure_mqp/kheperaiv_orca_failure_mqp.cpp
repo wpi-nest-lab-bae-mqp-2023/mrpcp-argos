@@ -30,6 +30,7 @@ void CKheperaIVORCAFailureMQP::Init(TConfigurationNode& t_node) {
     m_pcRABS = GetSensor<CCI_RangeAndBearingSensor>("range_and_bearing");
     m_pcWheelsS = GetSensor<CCI_DifferentialSteeringSensor>("differential_steering");
     m_pcWheelsA = GetActuator<CCI_DifferentialSteeringActuator>("differential_steering");
+    m_pcLEDs = GetActuator<CCI_LEDsActuator>("leds");
 
     Reset();
 }
@@ -94,6 +95,9 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
     angle_err = atan2(y_err, x_err) - yaw.GetValue();
     if(angle_err >= M_PI) { angle_err -= 2 * M_PI; }
     if(angle_err < -M_PI) { angle_err += 2 * M_PI; }
+
+    if (since_failed_counter != 0 && ((int)(since_failed_counter / 10) % 2) == 0) { m_pcLEDs->SetAllColors(CColor::RED); }
+    else { m_pcLEDs->SetAllColors(CColor::BLACK); }
 
     if(path_arr.empty()){ return; }
     // Step 1: Execute on the state machine only if there is a path for robots to follow.

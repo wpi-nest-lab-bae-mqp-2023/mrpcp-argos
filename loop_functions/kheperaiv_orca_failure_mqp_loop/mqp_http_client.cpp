@@ -37,14 +37,14 @@ bool mqp_http_client::make_http_req(nlohmann::json *data, const std::string& req
 
 bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<double>>>> *path_arr,
                             std::string host,
-                            int k,
-                            double n_a,
+                            unsigned int k,
+                            unsigned int n_a,
                             double fcr,
-                            double rp,
+                            unsigned int rp,
                             double ssd,
                             std::string mode) {
 
-//    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
+    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
     std::string req_url = host+"/solve?k="+std::to_string(k)+"&n_a=" + std::to_string(int(n_a)) + "&fcr=" + std::to_string(fcr) +  "&ssd=" + std::to_string(int(ssd)) + "&mode=" + mode + "&rp=" + std::to_string(int(rp));
 
     json data;
@@ -73,8 +73,12 @@ bool mqp_http_client::recalculate(std::vector<std::vector<std::vector<std::vecto
                             std::string curr_robots_pos
                           ) {
 
-//    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
-    std::string req_url = host+"/recalculate?job_id="+std::to_string(k)+"_=" + std::to_string(int(n_a))  +  "_" + std::to_string(int(ssd)) + "_" + std::to_string(fcr) + "_" + std::to_string(int(rp)) + "_m&curr_robots_pos=" + curr_robots_pos + "&curr_fuel_levels=" + curr_fuel_levels;
+
+    std::cout << "Attempting to recalculate...\n" << std::endl;
+
+    std::string req_url = host+"/recalculate?job_id="+std::to_string(k)+"_" + std::to_string(int(n_a))  +  "_" + std::to_string(int(ssd)) + "_" + std::to_string(fcr) + "_" + std::to_string(int(rp)) + "_m&curr_robots_pos=" + curr_robots_pos + "&curr_fuel_levels=" + curr_fuel_levels;
+
+    std::cout << req_url << std::endl;
 
     json data;
     mqp_packets::res mqp_res;
