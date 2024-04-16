@@ -82,13 +82,14 @@ bool mqp_http_client::recalculate(std::vector<std::vector<std::vector<std::vecto
 
     json data;
     mqp_packets::res mqp_res;
+
     while (true) {
         make_http_req(&data, req_url);
         if (data["status"] == "completed") { break; }
         usleep(1000000);
     }
 
-    *path_arr = data["robot_world_path"].get<std::vector<std::vector<std::vector<std::vector<double>>>>>();
+    //*path_arr = data["robot_world_path"].get<std::vector<std::vector<std::vector<std::vector<double>>>>>();
 
 //    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
     return true;

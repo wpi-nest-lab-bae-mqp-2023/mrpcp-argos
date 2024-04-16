@@ -240,4 +240,3 @@ void CKheperaIVORCAFailureMQP::ApplyTwist(double v_eff, double omega_eff) {
 
 
 REGISTER_CONTROLLER(CKheperaIVORCAFailureMQP, "kheperaiv_orca_failure_mqp_controller")
-

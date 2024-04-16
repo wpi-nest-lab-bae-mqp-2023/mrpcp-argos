@@ -138,10 +138,10 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
 
         if(cController.since_failed_counter == 1){
-          std::string req_url = host+"/recalculate?job_id="+std::to_string(k)+"_" + std::to_string(int(n_a))  +  "_" + std::to_string(int(ssd)) + "_" + std::to_string(fcr) + "_" + std::to_string(int(rp)) + "_m&curr_robots_pos=" + curr_robots_pos + "&curr_fuel_levels=" + curr_fuel_levels;
+          //std::string req_url = host+"/recalculate?job_id="+std::to_string(k)+"_" + std::to_string(int(n_a))  +  "_" + std::to_string(int(ssd)) + "_" + std::to_string(fcr) + "_" + std::to_string(int(rp)) + "_m&curr_robots_pos=" + curr_robots_pos + "&curr_fuel_levels=" + curr_fuel_levels;
 
-          std::cout << req_url << std::endl;
-          //mqp_http_client::recalculate(&path_arr, host, k, n_a, fcr, rp, ssd, mode, curr_robots_pos, curr_fuel_levels);
+          //std::cout << req_url << std::endl;
+          mqp_http_client::recalculate(&path_arr, host, k, n_a, fcr, rp, ssd, mode, curr_fuel_levels, curr_robots_pos);
         }
         else if (cController.since_failed_counter > frt / (10. * GetSimulator().GetPhysicsEngines()[0]->GetPhysicsClockTick())) {
             // Teleport robot, but also delay if can't place to the start location
@@ -182,7 +182,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
 void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     std::cout << "Setting up in kheperaiv_orca_failure_mqp_loop.cpp" << std::endl;
 
-    std::string host; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
     GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
     if (k <= 0) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (k<=0): Select k > 0."); }
     GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "n_a", n_a, n_a);
