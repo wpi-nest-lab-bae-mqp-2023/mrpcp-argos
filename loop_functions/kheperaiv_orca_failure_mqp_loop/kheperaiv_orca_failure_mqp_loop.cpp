@@ -84,7 +84,11 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 }
 
 void CKheperaIVORCAMQPLoop::PreStep() {
+    CVector2 robot_posn[num_of_robots];
+    double curr_fuel_levels[num_of_robots];
+
     // Start robots in order at start
+    int ki = 0;
     unsigned int depot_turn_robot_id = 0;
     for (auto cKheperaIV : cKheperaIVs) {
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
@@ -95,8 +99,23 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         if (cController.id == depot_turn_robot_id && cController.did_leave_from_startup_depot) {
             depot_turn_robot_id += 1;
         }
+
+
+        CVector2 cPos;
+        cPos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+                 cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+
+        robot_posn[ki] = cPos;
+        curr_fuel_levels[ki] = 1;
+        ki += 1;
     }
 
+    //std::cout << std::to_string(robot_posn) << std::endl;
+    std::string line = "";
+
+    for(int x = 0; x++; x<num_of_robots){
+      line = line + "[" std::to_string(robot_posn[x].GetX()) << ", " << std::to_string(robot_posn[x].GetX()) +"]";
+    }
     // Respawn robots after some time period
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
         int i = floor(ki / num_of_robots_per_side);
@@ -109,9 +128,13 @@ void CKheperaIVORCAMQPLoop::PreStep() {
             bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
             if (!success) { continue; }
             cController.Reset();
-            std::cout << "kp" << ki << " respawned!" << std::endl;
+            //std::cout << "kp" << ki << " respawned!" << std::endl;
+
+            //mqp_http_client::recalculate(&path_arr, host, k, n_a, fcr, rp, ssd, mode, curr_robots_pos, curr_fuel_levels);
+
         }
     }
+
 
     // Log positions to an output file
     std::string line = "";
@@ -139,19 +162,21 @@ void CKheperaIVORCAMQPLoop::PreStep() {
 void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     std::cout << "Setting up in get_initial_solution_mqp.cpp" << std::endl;
 
-    std::string host; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
-    int k = 0; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
+
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "host", host, host);
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "k", k, k);
     if (k <= 0) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (k<=0): Select k > 0."); }
-    float n_a = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "n_a", n_a, n_a);
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "n_a", n_a, n_a);
     if (n_a <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (n_a<=0): Select n_a > 0."); }
-    float fcr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fcr", fcr, fcr);
     if (fcr <= 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fcr<=1): Select fcr > 1."); }
-    float rp = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "rp", rp, rp);
-    if (rp < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (rp<0): Select rp >= 0."); }
-    float ssd = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
+    if (fr < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr<0): Select fr >= 0."); }
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "ssd", ssd, ssd);
     if (ssd <= 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (ssd<=0): Select ssd > 0."); }
-    std::string mode; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
-    if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
+
+    GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "rp", rp, rp);
 
     std::cout << "Problem Specification Parameters:" << std::endl;
     std::cout << "\thost (problem solver server host): " << host << std::endl;

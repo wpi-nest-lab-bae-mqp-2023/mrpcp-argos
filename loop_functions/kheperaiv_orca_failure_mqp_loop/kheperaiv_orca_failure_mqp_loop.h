@@ -50,6 +50,15 @@ public:
     string position_logging_output_file;
     string position_logging_output_file_w_stamp;
 
+    //problem parameters
+    std::string host;
+    int k = 0;
+    float n_a = 0.;
+    float fcr = 0.;
+    float fr = 0.;
+    float ssd = 0.;
+    int rp = 0;
+    std::string mode;
 };
 
 #endif

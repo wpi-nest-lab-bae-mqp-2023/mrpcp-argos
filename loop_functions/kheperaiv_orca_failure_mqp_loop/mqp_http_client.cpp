@@ -61,6 +61,36 @@ bool mqp_http_client::solve(std::vector<std::vector<std::vector<std::vector<doub
     return true;
 }
 
+bool mqp_http_client::recalculate(std::vector<std::vector<std::vector<std::vector<double>>>> *path_arr,
+                            std::string host,
+                            int k,
+                            double n_a,
+                            double fcr,
+                            double rp,
+                            double ssd,
+                            std::string mode,
+                            std::string curr_fuel_levels,
+                            std::string curr_robots_pos
+                          ) {
+
+//    std::cout << "Calling the initial solve endpoint...\n" << std::endl;
+    std::string req_url = host+"/recalculate?job_id="+std::to_string(k)+"_=" + std::to_string(int(n_a))  +  "_" + std::to_string(int(ssd)) + "_" + std::to_string(fcr) + "_" + std::to_string(int(rp)) + "_m&curr_robots_pos=" + curr_robots_pos + "&curr_fuel_levels=" + curr_fuel_levels;
+
+    json data;
+    mqp_packets::res mqp_res;
+    while (true) {
+        make_http_req(&data, req_url);
+        if (data["status"] == "completed") { break; }
+        usleep(1000000);
+    }
+
+    *path_arr = data["robot_world_path"].get<std::vector<std::vector<std::vector<std::vector<double>>>>>();
+
+//    std::cout << "Ran the initial solve endpoint!\n" << std::endl;
+    return true;
+}
+
+
 void mqp_http_client::printPaths(std::vector<std::vector<std::vector<std::vector<double>>>> path_arr) {
     for (int ki = 0; ki < path_arr.size(); ++ki) {
         std::cout << "Robot #" << ki << std::endl;
