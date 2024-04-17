@@ -16,6 +16,8 @@ void CQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
 //    auto curr_robot_pos = CVector3(cController.curr_pos.GetX(), cController.curr_pos.GetY(), 0.);
     if (cController.since_failed_counter) {
         DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[3]);
+    } else if (cController.since_deadlock_counter) {
+        DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[20]);
     } else {
         DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[60]);
     }
