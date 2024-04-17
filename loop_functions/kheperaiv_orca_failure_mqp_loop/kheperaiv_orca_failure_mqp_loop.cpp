@@ -28,7 +28,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 //    double depot_x = path_arr[0][0][0][0];
 //    double depot_y = path_arr[0][0][0][1];
     depot = path_arr[0][0][0];
-    delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
+    delta = 0.25; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
     double fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
     frt = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "frt", frt, frt);
