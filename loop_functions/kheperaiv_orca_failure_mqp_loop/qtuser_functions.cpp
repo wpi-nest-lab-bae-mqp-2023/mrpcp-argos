@@ -27,8 +27,7 @@ void CQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
                   curr_orca_vec + CVector3(0., 0., 0.04)),
             CColor(0xFF, 0xFA, 0xFE, 250), 3);
 
-    DrawText(CVector3(0.0, 0.0, 0.5), c_entity.GetId());
-
+    if (cController.path_arr.size()) { DrawText(CVector3(0.0, 0.0, 0.5), "kp" + std::to_string(cController.id)); }
 }
 
 void CQTUserFunctions::DrawInWorld() {

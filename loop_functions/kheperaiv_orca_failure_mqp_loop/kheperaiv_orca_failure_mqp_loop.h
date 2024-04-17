@@ -34,6 +34,7 @@ public:
 
     void RequestPath(TConfigurationNode& t_tree);
     void CalculateObstacles();
+    void updateKheperaIVs();
 
     std::vector<std::vector<std::vector<std::vector<double>>>> path_arr;
     std::vector<std::vector<RVO::Vector2>> obstacles;
@@ -55,6 +56,9 @@ public:
     unsigned int rp = 0;
     std::string mode;
     position_logger* pos_logger;
+
+    double rab_range = 1.0;
+
 };
 
 #endif

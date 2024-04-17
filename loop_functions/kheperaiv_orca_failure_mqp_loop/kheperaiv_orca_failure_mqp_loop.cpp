@@ -4,16 +4,16 @@
 
 #include "kheperaiv_orca_failure_mqp_loop.h"
 
+
 CKheperaIVORCAMQPLoop::CKheperaIVORCAMQPLoop() {
 
 }
+
 
 void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
     RequestPath(t_tree);
     CalculateObstacles();
-
-    double rab_range = 1.0;
 
     CQuaternion random_quat;
     random_quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
@@ -23,8 +23,6 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     num_of_robots = path_arr.size();
     num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
 
-//    double depot_x = path_arr[0][0][0][0];
-//    double depot_y = path_arr[0][0][0][1];
     depot = path_arr[0][0][0];
     delta = 0.25; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
     double fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
@@ -42,31 +40,24 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
                 random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
 
                 // Populate the robots array and configure the robot
-                cKheperaIVs.push_back(new CKheperaIVEntity(
+                auto cKheperaIV = new CKheperaIVEntity(
                         "kp" + std::to_string(robot_id),
                         "kheperaiv_orca_failure_mqp_controller",
                         CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0),
                         random_quat,
-                        rab_range));
-                AddEntity(*cKheperaIVs[robot_id]);
-
-                auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
-                cController.id = robot_id;
-                cController.fr = fr;
-                cController.obstacles = obstacles;
-                cController.rab_range = rab_range;
-                cController.SetPath(path_arr[robot_id]);
+                        rab_range);
+                AddEntity(*cKheperaIV);
             }
         }
-    } else {
-
     }
 
     pos_logger = new position_logger(position_logging_output_folder);
     std::cout << "Ran init in kheperaiv_orca_failure_mqp_loop.cpp" << std::endl;
 }
 
+
 void CKheperaIVORCAMQPLoop::PreStep() {
+    updateKheperaIVs();
     CVector2 robot_posn[num_of_robots];
     float fuel_levels[num_of_robots];
 
@@ -78,8 +69,8 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         if (cController.id == depot_turn_robot_id) {
             cController.is_turn_to_startup_depot = true;
         }
-//        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
         if (cController.id == depot_turn_robot_id && cController.did_leave_from_startup_depot) {
+//            std::cout << "id" << cController.id << " is done, letting next robot go..." << std::endl;
             depot_turn_robot_id += 1;
         }
 
@@ -109,7 +100,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
     curr_fuel_levels = "[" + curr_fuel_levels.substr(0, curr_fuel_levels.size()-1) + "]";
 
 
-    // Respawn robots after some time period
+    // If a failure happens, respawn robots after some time period
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
         int i = floor(ki / num_of_robots_per_side);
         int j = ki % num_of_robots_per_side;
@@ -132,11 +123,52 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         }
     }
 
-
     // Log positions to an output file
     pos_logger->write_to_logs(cKheperaIVs);
 }
 
+
+void CKheperaIVORCAMQPLoop::updateKheperaIVs() {
+    if (num_of_robots == cKheperaIVs.size()) { return; }
+
+    CSpace::TMapPerType &m_cKheperaIVs = GetSpace().GetEntitiesByType("kheperaiv");
+
+    for (CSpace::TMapPerType::iterator it = m_cKheperaIVs.begin();
+         it != m_cKheperaIVs.end();
+         ++it) {
+        /* Get handle to foot-bot entity and controller */
+        auto &cKheperaIV = any_cast<CKheperaIVEntity *>(it->second);
+        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+
+        bool exists = cController.path_arr.size() > 0;
+        if (exists) { continue; }
+        CVector2 new_robot_pos;
+        new_robot_pos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+                          cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+        double new_robot_depot_dist = (new_robot_pos - CVector2(depot[0], depot[1])).Length();
+
+        unsigned int robot_id = cKheperaIVs.size();
+        for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
+            CVector2 existing_robot_pos;
+            existing_robot_pos.Set(cKheperaIVs[ki]->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+                                   cKheperaIVs[ki]->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+            double existing_robot_depot_dist = (existing_robot_pos - CVector2(depot[0], depot[1])).Length();
+            if (existing_robot_depot_dist > new_robot_depot_dist) {
+                robot_id = ki;
+                break;
+            }
+        }
+        cController.fr = fr;
+        cController.obstacles = obstacles;
+        cController.rab_range = rab_range;
+        cController.SetPath(path_arr[robot_id]);
+        cKheperaIVs.insert(cKheperaIVs.begin() + robot_id, cKheperaIV);
+    }
+    for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
+        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[ki]->GetControllableEntity().GetController());
+        cController.id = ki;
+    }
+}
 
 
 void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
@@ -173,8 +205,8 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
 
 }
 
-void CKheperaIVORCAMQPLoop::Reset() {
-}
+
+void CKheperaIVORCAMQPLoop::Reset() { }
 
 
 void CKheperaIVORCAMQPLoop::CalculateObstacles() {
@@ -194,7 +226,6 @@ void CKheperaIVORCAMQPLoop::CalculateObstacles() {
         obstacles.push_back(obstacle);
     }
 }
-
 
 
 REGISTER_LOOP_FUNCTIONS(CKheperaIVORCAMQPLoop, "kheperaiv_orca_failure_mqp_loop")
