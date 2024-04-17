@@ -50,6 +50,7 @@ public:
     unsigned long id;
 
     CVector2 curr_pos;
+    CVector2 prev_pos;
     CVector2 curr_vel;
     CVector2 goal_pos;
     CVector2 depot_pos;
@@ -167,7 +168,7 @@ private:
     double rotatingRotationTolerance = M_PI / 24.;  // M_PI/48. = +- 3.75 degrees
 
     CVector2 orcaNeighborsCentroid = CVector2();
-    double orcaTimeHorizon = 2.;
+    double orcaTimeHorizon = 1.;
 };
 
 #endif

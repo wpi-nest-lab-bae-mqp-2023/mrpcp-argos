@@ -174,6 +174,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             LOGERR << "We can't be here, there's a bug!" << std::endl;
         }
     }
+    prev_pos = curr_pos;
 }
 
 void CKheperaIVORCAFailureMQP::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading) {
@@ -181,14 +182,15 @@ void CKheperaIVORCAFailureMQP::UpdateVelocityVector(CCI_DifferentialSteeringSens
 //    From FK:
 //    double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
 //    double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    double left_wheel_vel = pcWheelsSReading.VelocityLeftWheel;
-    double right_wheel_vel = pcWheelsSReading.VelocityRightWheel;
+    double left_wheel_vel = pcWheelsSReading.VelocityLeftWheel * 100.;
+    double right_wheel_vel = pcWheelsSReading.VelocityRightWheel * 100.;
     double vel_magnitude = (left_wheel_vel + right_wheel_vel) / 2.;
     double vel_omega = (vel_magnitude - left_wheel_vel) / KHEPERAIV_HALF_WHEEL_DISTANCE;
-    auto tmp = CVector2(vel_magnitude, CRadians(vel_omega));
+
+    auto tmp = (curr_pos - prev_pos) / 10.;
     auto curr_vel_x = curr_vel_x_filter.isFilledOnce ? curr_vel_x_filter.addAndReturnAverage(tmp.GetX()) : tmp.GetX();
     auto curr_vel_y = curr_vel_y_filter.isFilledOnce ? curr_vel_y_filter.addAndReturnAverage(tmp.GetY()) : tmp.GetY();
-    curr_vel = CVector2(curr_vel_x, curr_vel_y);
+    curr_vel.Set(curr_vel_x, curr_vel_y);
 }
 
 void CKheperaIVORCAFailureMQP::BroadcastORCA() {
@@ -273,15 +275,19 @@ void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);
         vel_eff = vel_ctrl.computeEffort(orca_dist_err);
         if (inverse_flag) { vel_eff *= -1.; }
+//        vel_eff *= -1.;
         wasRotating = false;
     }
+//    std::cout << "v_eff: " << v_eff << " omega_eff:" << omega_eff << std::endl;
     ApplyTwist(vel_eff, omega_eff);
 }
 
 void CKheperaIVORCAFailureMQP::ApplyTwist(double v_eff, double omega_eff) {
-    double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    m_pcWheelsA->SetLinearVelocity(left_wheel_vel * 100., right_wheel_vel * 100.);
+//    std::cout << "v_eff: " << v_eff << " omega_eff:" << omega_eff << std::endl;
+    double left_wheel_vel = 100. * (v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff);
+    double right_wheel_vel = 100. * (v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff);
+    m_pcWheelsA->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
+//    std::cout << "l: " << left_wheel_vel << " r:" << right_wheel_vel << std::endl;
 }
 
 
