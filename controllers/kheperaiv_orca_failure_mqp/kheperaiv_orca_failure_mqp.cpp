@@ -11,8 +11,8 @@ CKheperaIVORCAFailureMQP::CKheperaIVORCAFailureMQP() :
         vel_ki(0.),
         vel_kd(0.),
         theta_kp(2.),
-        theta_ki(0.1),
-        theta_kd(0.1),
+        theta_ki(0.),
+        theta_kd(0.),
         vel_ctrl(vel_kp, vel_ki, vel_kd, -maxRobotVelocity, maxRobotVelocity, maxRobotVelocity/4.),
         theta_ctrl(theta_kp, theta_ki, theta_kd, -maxRobotOmega, maxRobotOmega, 0.),
         curr_vel_x_filter(AveragingFilter(10, 0.)),
@@ -251,11 +251,15 @@ void CKheperaIVORCAFailureMQP::DriveORCA(CVector2 orca_goal_pos) {
 }
 
 void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
+    bool inverse_flag = false;
     auto orca_dist_err = VelVec.Length();
     auto orca_angle_err = VelVec.Angle().GetValue();
     if(orca_angle_err >= M_PI) { orca_angle_err -= 2 * M_PI; }
     if(orca_angle_err < -M_PI) { orca_angle_err += 2 * M_PI; }
-//    std::cout << "orca_angle_err: " << orca_angle_err << std::endl;
+    if (abs(orca_angle_err) > M_PI_2) { orca_angle_err = VelVec.Rotate(CRadians(M_PI)).Angle().GetValue(); inverse_flag = true;}
+    if(orca_angle_err >= M_PI) { orca_angle_err -= 2 * M_PI; }
+    if(orca_angle_err < -M_PI) { orca_angle_err += 2 * M_PI; }
+//    if (id == 0) { std::cout << "kp" << id << " angle err" << orca_angle_err << std::endl; }
 
     double vel_eff = 0.; double omega_eff = 0.;
     double tolerance = wasRotating ? rotatingRotationTolerance : drivingRotationTolerance;
@@ -268,7 +272,7 @@ void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
     } else {
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);
         vel_eff = vel_ctrl.computeEffort(orca_dist_err);
-        if (abs(orca_angle_err) > M_PI_2) { omega_eff *= -1.; vel_eff *= -1.; }
+        if (inverse_flag) { vel_eff *= -1.; }
         wasRotating = false;
     }
     ApplyTwist(vel_eff, omega_eff);
