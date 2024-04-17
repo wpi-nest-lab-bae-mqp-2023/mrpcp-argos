@@ -19,8 +19,8 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     random_quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
-    num_of_robots = 3;
-//    num_of_robots = path_arr.size();
+//    num_of_robots = 3;
+    num_of_robots = path_arr.size();
     num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
 
     depot = path_arr[0][0][0];
