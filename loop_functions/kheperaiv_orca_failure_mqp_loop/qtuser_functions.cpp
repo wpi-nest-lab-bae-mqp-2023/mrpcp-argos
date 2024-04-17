@@ -1,10 +1,11 @@
 #include "qtuser_functions.h"
-
+#include <loop_functions/master_loop_functions/master_loop_functions.h>
 /****************************************/
 /****************************************/
 
 CQTUserFunctions::CQTUserFunctions() :
-        m_cKheperaIVORCALoop(dynamic_cast<CKheperaIVORCAMQPLoop&>(CSimulator::GetInstance().GetLoopFunctions())) {
+        m_cKheperaIVORCALoop(dynamic_cast<CKheperaIVORCAMQPLoop&>((dynamic_cast<CMasterLoopFunctions&>(CSimulator::GetInstance().GetLoopFunctions())).GetLoopFunction("kheperaiv_orca_failure_mqp_loop")))
+{ // CKheperaIVORCAMQPLoop
    RegisterUserFunction<CQTUserFunctions,CKheperaIVEntity>(&CQTUserFunctions::DrawID);
 }
 
