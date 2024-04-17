@@ -160,6 +160,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
 
+        cController.ticks = ticks;
         CVector2 cPos;
         cPos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
                  cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
