@@ -3,37 +3,33 @@
 //
 
 #include "kheperaiv_orca_failure_mqp_loop.h"
-#include <sys/types.h>
-#include <sys/stat.h>
+
 
 CKheperaIVORCAMQPLoop::CKheperaIVORCAMQPLoop() {
 
 }
+
 
 void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
     RequestPath(t_tree);
     CalculateObstacles();
 
-    double rab_range = 1.0;
-
     CQuaternion random_quat;
     random_quat.FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.));
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
-    //    unsigned long num_of_robots = 3;
+//    num_of_robots = 3;
     num_of_robots = path_arr.size();
     num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
 
-//    double depot_x = path_arr[0][0][0][0];
-//    double depot_y = path_arr[0][0][0][1];
     depot = path_arr[0][0][0];
-    delta = 0.3; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
+    delta = 0.25; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
     double fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
     frt = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "frt", frt, frt);
     if (frt < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (frt<0): Select frt >= 0."); }
-    position_logging_output_folder = ""; GetNodeAttributeOrDefault(GetNode(t_tree, "position_logging_params"), "output-folder", position_logging_output_folder, position_logging_output_folder);
+    string position_logging_output_folder = ""; GetNodeAttributeOrDefault(GetNode(t_tree, "position_logging_params"), "output-folder", position_logging_output_folder, position_logging_output_folder);
 
     if (GetSimulator().GetPhysicsEngines()[0]->GetId() == "dyn2d") {
         for (unsigned long i = 0; i < num_of_robots_per_side; ++i) {
@@ -44,50 +40,24 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
                 random_quat.FromEulerAngles(m_pcRNG->Uniform(CRange(CRadians(-M_PI), CRadians(M_PI))), CRadians(0.), CRadians(0.));
 
                 // Populate the robots array and configure the robot
-                cKheperaIVs.push_back(new CKheperaIVEntity(
+                auto cKheperaIV = new CKheperaIVEntity(
                         "kp" + std::to_string(robot_id),
                         "kheperaiv_orca_failure_mqp_controller",
                         CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0),
                         random_quat,
-                        rab_range));
-                AddEntity(*cKheperaIVs[robot_id]);
-
-                auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[robot_id]->GetControllableEntity().GetController());
-                cController.id = robot_id;
-                cController.fr = fr;
-                cController.obstacles = obstacles;
-                cController.rab_range = rab_range;
-                cController.SetPath(path_arr[robot_id]);
+                        rab_range);
+                AddEntity(*cKheperaIV);
             }
         }
-    } else {
-
     }
 
-    // If the folder doesn't exist, create it
-    struct stat info;
-    if (!(info.st_mode & S_IFDIR))
-        std::filesystem::create_directory(position_logging_output_folder);
-
-    position_logging_output_file = (std::filesystem::path(position_logging_output_folder) / "position_logs.txt").string();
-    std::ostringstream osss;
-    auto t = std::time(nullptr);
-    auto tm = *std::localtime(&t);
-    osss << std::put_time(&tm, "%Y_%m_%d_%H_%M_%S");
-    position_logging_output_file_w_stamp = (std::filesystem::path(position_logging_output_folder) / (osss.str()+"_position_logs.txt")).string();
-
-    std::cout << "position_logging_output_file: " << position_logging_output_file << std::endl;
-    std::cout << "position_logging_output_file_w_stamp: " << position_logging_output_file_w_stamp << std::endl;
-
-    std::ofstream oss1;
-    oss1.open(position_logging_output_file, std::ios::out);
-    std::ofstream oss2;
-    oss2.open(position_logging_output_file_w_stamp, std::ios::out);
-    ticks = 0;
+    pos_logger = new position_logger(position_logging_output_folder);
     std::cout << "Ran init in kheperaiv_orca_failure_mqp_loop.cpp" << std::endl;
 }
 
+
 void CKheperaIVORCAMQPLoop::PreStep() {
+    updateKheperaIVs();
     CVector2 robot_posn[num_of_robots];
     float fuel_levels[num_of_robots];
 
@@ -99,8 +69,8 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         if (cController.id == depot_turn_robot_id) {
             cController.is_turn_to_startup_depot = true;
         }
-//        std::cout << "id" << cController.id << "X: " << cController.goal_pos.GetX() << "; Y: " << cController.goal_pos.GetY() << std::endl;
         if (cController.id == depot_turn_robot_id && cController.did_leave_from_startup_depot) {
+//            std::cout << "id" << cController.id << " is done, letting next robot go..." << std::endl;
             depot_turn_robot_id += 1;
         }
 
@@ -134,7 +104,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
     curr_fuel_levels = "[" + curr_fuel_levels.substr(0, curr_fuel_levels.size()-1) + "]";
 
 
-    // Respawn robots after some time period
+    // If a failure happens, respawn robots after some time period
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
         int i = floor(ki / num_of_robots_per_side);
         int j = ki % num_of_robots_per_side;
@@ -161,29 +131,52 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         }
     }
 
-
     // Log positions to an output file
-    std::string line = "";
-    for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
-        auto cKheperaIV = cKheperaIVs[ki];
-        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
-
-        cController.ticks = ticks;
-        CVector2 cPos;
-        cPos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
-                 cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
-
-        line = line + std::to_string(cPos.GetX()) + "," + std::to_string(cPos.GetY()) + "," + std::to_string(ticks * (10. * GetSimulator().GetPhysicsEngines()[0]->GetPhysicsClockTick())) + ";";
-    }
-    std::ofstream oss1;
-    oss1.open(position_logging_output_file, std::ios::app);
-    oss1 << line << std::endl;
-    std::ofstream oss2;
-    oss2.open(position_logging_output_file_w_stamp, std::ios::app);
-    oss2 << line << std::endl;
-    ticks += 1;
+    pos_logger->write_to_logs(cKheperaIVs);
 }
 
+
+void CKheperaIVORCAMQPLoop::updateKheperaIVs() {
+    if (num_of_robots == cKheperaIVs.size()) { return; }
+
+    CSpace::TMapPerType &m_cKheperaIVs = GetSpace().GetEntitiesByType("kheperaiv");
+
+    for (CSpace::TMapPerType::iterator it = m_cKheperaIVs.begin();
+         it != m_cKheperaIVs.end();
+         ++it) {
+        /* Get handle to foot-bot entity and controller */
+        auto &cKheperaIV = any_cast<CKheperaIVEntity *>(it->second);
+        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+
+        bool exists = cController.path_arr.size() > 0;
+        if (exists) { continue; }
+        CVector2 new_robot_pos;
+        new_robot_pos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+                          cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+        double new_robot_depot_dist = (new_robot_pos - CVector2(depot[0], depot[1])).Length();
+
+        unsigned int robot_id = cKheperaIVs.size();
+        for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
+            CVector2 existing_robot_pos;
+            existing_robot_pos.Set(cKheperaIVs[ki]->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
+                                   cKheperaIVs[ki]->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+            double existing_robot_depot_dist = (existing_robot_pos - CVector2(depot[0], depot[1])).Length();
+            if (existing_robot_depot_dist > new_robot_depot_dist) {
+                robot_id = ki;
+                break;
+            }
+        }
+        cController.fr = fr;
+        cController.obstacles = obstacles;
+        cController.rab_range = rab_range;
+        cController.SetPath(path_arr[robot_id]);
+        cKheperaIVs.insert(cKheperaIVs.begin() + robot_id, cKheperaIV);
+    }
+    for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
+        auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIVs[ki]->GetControllableEntity().GetController());
+        cController.id = ki;
+    }
+}
 
 
 void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
@@ -220,8 +213,8 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
 
 }
 
-void CKheperaIVORCAMQPLoop::Reset() {
-}
+
+void CKheperaIVORCAMQPLoop::Reset() { }
 
 
 void CKheperaIVORCAMQPLoop::CalculateObstacles() {
@@ -241,7 +234,6 @@ void CKheperaIVORCAMQPLoop::CalculateObstacles() {
         obstacles.push_back(obstacle);
     }
 }
-
 
 
 REGISTER_LOOP_FUNCTIONS(CKheperaIVORCAMQPLoop, "kheperaiv_orca_failure_mqp_loop")

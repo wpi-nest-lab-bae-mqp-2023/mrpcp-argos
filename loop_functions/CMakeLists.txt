@@ -6,4 +6,6 @@ add_subdirectory(get_initial_solution_mqp2)
 add_subdirectory(kheperaiv_orca_loop)
 add_subdirectory(collision_handling_loop)
 add_subdirectory(kheperaiv_orca_mqp_loop)
+
+add_subdirectory(master_loop_functions)
 add_subdirectory(kheperaiv_orca_failure_mqp_loop)

@@ -1,10 +1,11 @@
 #include "qtuser_functions.h"
-
+#include <loop_functions/master_loop_functions/master_loop_functions.h>
 /****************************************/
 /****************************************/
 
 CQTUserFunctions::CQTUserFunctions() :
-        m_cKheperaIVORCALoop(dynamic_cast<CKheperaIVORCAMQPLoop&>(CSimulator::GetInstance().GetLoopFunctions())) {
+        m_cKheperaIVORCALoop(dynamic_cast<CKheperaIVORCAMQPLoop&>((dynamic_cast<CMasterLoopFunctions&>(CSimulator::GetInstance().GetLoopFunctions())).GetLoopFunction("kheperaiv_orca_failure_mqp_loop")))
+{ // CKheperaIVORCAMQPLoop
    RegisterUserFunction<CQTUserFunctions,CKheperaIVEntity>(&CQTUserFunctions::DrawID);
 }
 
@@ -16,6 +17,8 @@ void CQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
 //    auto curr_robot_pos = CVector3(cController.curr_pos.GetX(), cController.curr_pos.GetY(), 0.);
     if (cController.since_failed_counter) {
         DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[3]);
+    } else if (cController.since_deadlock_counter) {
+        DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[20]);
     } else {
         DrawCircle(CVector3(0., 0., 0.03), CQuaternion(), KHEPERAIV_BASE_RADIUS * 1.5, colors[60]);
     }
@@ -25,8 +28,7 @@ void CQTUserFunctions::DrawID(CKheperaIVEntity& c_entity) {
                   curr_orca_vec + CVector3(0., 0., 0.04)),
             CColor(0xFF, 0xFA, 0xFE, 250), 3);
 
-    DrawText(CVector3(0.0, 0.0, 0.5), c_entity.GetId());
-
+    if (cController.path_arr.size()) { DrawText(CVector3(0.0, 0.0, 0.5), "kp" + std::to_string(cController.id)); }
 }
 
 void CQTUserFunctions::DrawInWorld() {

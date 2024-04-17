@@ -50,6 +50,7 @@ public:
     unsigned long id;
 
     CVector2 curr_pos;
+    CVector2 prev_pos;
     CVector2 curr_vel;
     CVector2 goal_pos;
     CVector2 depot_pos;
@@ -99,13 +100,15 @@ public:
 
     double fr = 0.;
     unsigned int since_failed_counter = 0;
+    unsigned int since_deadlock_counter = 0;
+    unsigned int since_non_deadlock_counter = 0;
 
     bool robot_failed = false;
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
     void BroadcastORCA();
-    void DriveORCA();
+    void DriveORCA(CVector2 orca_goal_pos);
     static NORCAData GetORCAData(CCI_RangeAndBearingSensor::SPacket sPacket);
 
     void ResetSim();
@@ -146,14 +149,17 @@ private:
 
     AveragingFilter curr_vel_x_filter;
     AveragingFilter curr_vel_y_filter;
+    AveragingFilter deadlock_detection_filter;
 
     /* The three possible states in which the controller can be */
     enum EState {
         STATE_NEW_POINT = 0,
         STATE_DRIVE,
+        STATE_DEADLOCK,
         STATE_FAILURE,
     };
     EState m_eState;
+    EState m_eState_prev;
 
     unsigned long subtour_idx;
     unsigned long node_idx;
@@ -163,8 +169,10 @@ private:
 
     bool wasRotating = false;
     double drivingRotationTolerance = M_PI / 12.;  // M_PI/12. = +- 15. degrees
-    double rotatingRotationTolerance = M_PI / 48.;  // M_PI/48. = +- 3.75 degrees
+    double rotatingRotationTolerance = M_PI / 24.;  // M_PI/48. = +- 3.75 degrees
 
+    CVector2 orcaNeighborsCentroid = CVector2();
+    double orcaTimeHorizon = 1.;
 };
 
 #endif

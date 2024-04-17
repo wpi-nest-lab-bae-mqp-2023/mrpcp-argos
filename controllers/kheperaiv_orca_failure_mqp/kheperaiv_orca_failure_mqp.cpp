@@ -11,12 +11,13 @@ CKheperaIVORCAFailureMQP::CKheperaIVORCAFailureMQP() :
         vel_ki(0.),
         vel_kd(0.),
         theta_kp(2.),
-        theta_ki(0.1),
-        theta_kd(0.1),
+        theta_ki(0.),
+        theta_kd(0.),
         vel_ctrl(vel_kp, vel_ki, vel_kd, -maxRobotVelocity, maxRobotVelocity, maxRobotVelocity/4.),
         theta_ctrl(theta_kp, theta_ki, theta_kd, -maxRobotOmega, maxRobotOmega, 0.),
         curr_vel_x_filter(AveragingFilter(10, 0.)),
-        curr_vel_y_filter(AveragingFilter(10, 0.))
+        curr_vel_y_filter(AveragingFilter(10, 0.)),
+        deadlock_detection_filter(AveragingFilter(100, 0.))
 { }
 
 void CKheperaIVORCAFailureMQP::SetPath(std::vector<std::vector<std::vector<double>>> path_arrki) {
@@ -44,6 +45,7 @@ void CKheperaIVORCAFailureMQP::Reset(){
 
     if(path_arr.empty()){ return; }
     m_eState = STATE_DRIVE;
+    m_eState_prev = m_eState;
     subtour_idx = 0;
     node_idx = 0;
     goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
@@ -57,6 +59,12 @@ void CKheperaIVORCAFailureMQP::Reset(){
     since_failed_counter = 0;
     is_turn_to_startup_depot = false;
     did_leave_from_startup_depot = false;
+
+    curr_vel_x_filter.reset();
+    curr_vel_y_filter.reset();
+    deadlock_detection_filter.reset();
+    since_deadlock_counter = 0;
+    since_non_deadlock_counter = 0;
 }
 
 void CKheperaIVORCAFailureMQP::ResetSim() {
@@ -66,7 +74,7 @@ void CKheperaIVORCAFailureMQP::ResetSim() {
     /* Specify the global time step of the simulation. */
     simulator->setTimeStep(0.1F);
     /* Specify the default parameters for agents that are subsequently added. */
-    simulator->setAgentDefaults((float)(rab_range), 10U, 1.0F, 1.0F, (float)(KHEPERAIV_BASE_RADIUS * 1.5), (float)(maxRobotVelocity));
+    simulator->setAgentDefaults((float)(rab_range), 10U, (float)orcaTimeHorizon, (float)orcaTimeHorizon, (float)(KHEPERAIV_BASE_RADIUS * 1.5), (float)(maxRobotVelocity));
 
     /* Add polygonal obstacles */
     for (const auto& obstacle : obstacles) {
@@ -100,7 +108,36 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
     else { m_pcLEDs->SetAllColors(CColor::BLACK); }
 
     if(path_arr.empty()){ return; }
-    // Step 1: Execute on the state machine only if there is a path for robots to follow.
+
+    // Deadlock detection
+    if (since_non_deadlock_counter > 3. * orcaTimeHorizon * 10. && did_leave_from_startup_depot && (m_eState == STATE_DEADLOCK || deadlock_detection_filter.getStdDev() < 0.01)) {
+        if (m_eState != STATE_DEADLOCK) {
+            m_eState_prev = m_eState;
+            m_eState = STATE_DEADLOCK;
+            std::cout << "kp" << id << " entered deadlock mode!" << std::endl;
+        }
+        since_deadlock_counter += 1;
+        if (since_deadlock_counter > 3. * orcaTimeHorizon * 10.) {
+            m_eState = m_eState_prev;
+            since_non_deadlock_counter = 0;
+            std::cout << "kp" << id << " is back in drive mode!" << std::endl;
+        }
+    } else {
+        since_deadlock_counter = 0;
+        since_non_deadlock_counter += 1;
+    }
+
+    // Failure checking
+    if (m_eState == STATE_DRIVE || m_eState == STATE_DEADLOCK) {
+        // Fail with a set probability rate (make sure the robot isn't in the depot)
+        if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
+            std::cout << "kp" << id << " failed!" << std::endl;
+            since_failed_counter = 0;
+            m_eState = STATE_FAILURE;
+        }
+    }
+
+    // Execute on the state machine only if there is a path for robots to follow.
     switch(m_eState) {
         case STATE_NEW_POINT: {
             node_idx += 1;
@@ -118,25 +155,18 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             break;
         }
         case STATE_DRIVE: {
-            if (!is_turn_to_startup_depot) { return; }
-            DriveORCA();
-
-            //std::cout << std::to_string(ticks * (10. * physics_engines[0]->GetPhysicsClockTick())) << std::endl;
-            // Fail with a set probability rate (make sure the robot isn't in the depot)
-            //if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
-            std::cout << id << std::endl;
-            if (did_leave_from_startup_depot && ticks > 600 && id == 0 && robot_failed == false) {
-                std::cout << "kp" << id << " failed!" << std::endl;
-                since_failed_counter = 0;
-                robot_failed = true;
-                m_eState = STATE_FAILURE;
-            }
+            if (!is_turn_to_startup_depot) { break; }
+            DriveORCA(goal_pos);
+            break;
+        }
+        case STATE_DEADLOCK: {
+            DriveORCA(curr_pos + (orcaNeighborsCentroid - curr_pos).Rotate(-yaw).Normalize() * maxRobotVelocity * orcaTimeHorizon);
             break;
         }
         case STATE_FAILURE: {
             std::cout << "kp" << id << " failed!" << std::endl;
             ApplyTwist(0., 0.);
-            orcaVec.SetX(0.); orcaVec.SetY(0.);
+            orcaVec.Set(0., 0.);
             goal_pos = curr_pos;
             since_failed_counter += 1;
             break;
@@ -145,6 +175,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             LOGERR << "We can't be here, there's a bug!" << std::endl;
         }
     }
+    prev_pos = curr_pos;
 }
 
 void CKheperaIVORCAFailureMQP::UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading) {
@@ -152,14 +183,15 @@ void CKheperaIVORCAFailureMQP::UpdateVelocityVector(CCI_DifferentialSteeringSens
 //    From FK:
 //    double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
 //    double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    double left_wheel_vel = pcWheelsSReading.VelocityLeftWheel;
-    double right_wheel_vel = pcWheelsSReading.VelocityRightWheel;
+    double left_wheel_vel = pcWheelsSReading.VelocityLeftWheel * 100.;
+    double right_wheel_vel = pcWheelsSReading.VelocityRightWheel * 100.;
     double vel_magnitude = (left_wheel_vel + right_wheel_vel) / 2.;
     double vel_omega = (vel_magnitude - left_wheel_vel) / KHEPERAIV_HALF_WHEEL_DISTANCE;
-    auto tmp = CVector2(vel_magnitude, CRadians(vel_omega));
+
+    auto tmp = (curr_pos - prev_pos) / 10.;
     auto curr_vel_x = curr_vel_x_filter.isFilledOnce ? curr_vel_x_filter.addAndReturnAverage(tmp.GetX()) : tmp.GetX();
     auto curr_vel_y = curr_vel_y_filter.isFilledOnce ? curr_vel_y_filter.addAndReturnAverage(tmp.GetY()) : tmp.GetY();
-    curr_vel = CVector2(curr_vel_x, curr_vel_y);
+    curr_vel.Set(curr_vel_x, curr_vel_y);
 }
 
 void CKheperaIVORCAFailureMQP::BroadcastORCA() {
@@ -178,12 +210,14 @@ CKheperaIVORCAFailureMQP::NORCAData CKheperaIVORCAFailureMQP::GetORCAData(CCI_Ra
     return NORCAData(nVelVecBytes);
 }
 
-void CKheperaIVORCAFailureMQP::DriveORCA() {
+void CKheperaIVORCAFailureMQP::DriveORCA(CVector2 orca_goal_pos) {
     /* Reset simulation and calculate ORCA preferred velocity. */
     double nodeVisitationTolerance = KHEPERAIV_BASE_RADIUS / 2.;
     ResetSim();
-    auto prefVelVec = goal_pos - curr_pos;
+    auto prefVelVec = orca_goal_pos - curr_pos;
     if (prefVelVec.Length() > maxRobotVelocity) { prefVelVec = prefVelVec.Normalize() * maxRobotVelocity; }
+
+    orcaNeighborsCentroid.Set(0., 0.);
     const CCI_RangeAndBearingSensor::TReadings& tPackets = m_pcRABS->GetReadings();
     for(size_t i = 0; i < tPackets.size() + 1; ++i) {
         CKheperaIVORCAFailureMQP::NORCAData nORCAData = i == tPackets.size() ? NORCAData(curr_pos, prefVelVec) : GetORCAData(tPackets[i]);
@@ -197,28 +231,38 @@ void CKheperaIVORCAFailureMQP::DriveORCA() {
                    dist * RVO::Vector2(std::cos(angle), std::sin(angle)));
 
         // Increase tolerance if necessary
-        auto other_robot_to_goal_dist = (goal_pos-nORCAData.curr_pos).Length();
+        auto other_robot_to_goal_dist = (orca_goal_pos-nORCAData.curr_pos).Length();
         if (other_robot_to_goal_dist < 0.5) {
             nodeVisitationTolerance += (0.5 - other_robot_to_goal_dist) / 5.;
         }
 
+        // Calculate neighbor centroid
+        if (i != tPackets.size()) { orcaNeighborsCentroid += nORCAData.curr_pos / tPackets.size(); }
     }
     simulator->doStep();
     orcaVec = NORCAData::RVOtoARGOSVec(simulator->getAgentVelocity(simulator->getNumAgents()-1)).Rotate(-yaw);
     // If close to goal point, get new point (tolerance is increased near depot to reduce traffic near depot)
     if (dist_err < nodeVisitationTolerance) { m_eState = STATE_NEW_POINT; return; }
-    did_leave_from_startup_depot = (curr_pos.GetX() > depot_pos.GetX() && curr_pos.GetY() > depot_pos.GetY()) || (curr_pos.GetX() > depot_pos.GetX() - 0.3 && curr_pos.GetY() > depot_pos.GetY() + 0.3) || (curr_pos.GetX() > depot_pos.GetX() + 0.3 && curr_pos.GetY() > depot_pos.GetY() - 0.3) ;
+    if (!did_leave_from_startup_depot) { did_leave_from_startup_depot = (curr_pos.GetX() > depot_pos.GetX() && curr_pos.GetY() > depot_pos.GetY()) || (curr_pos.GetX() > depot_pos.GetX() - 0.3 && curr_pos.GetY() > depot_pos.GetY() + 0.3) || (curr_pos.GetX() > depot_pos.GetX() + 0.3 && curr_pos.GetY() > depot_pos.GetY() - 0.3); }
+
     // If not, apply ORCA
     ApplyORCA(orcaVec);
 //    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;
+
+    // For deadlock detection
+    deadlock_detection_filter.addDatum((goal_pos - curr_pos).Length());
 }
 
 void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
+    bool inverse_flag = false;
     auto orca_dist_err = VelVec.Length();
     auto orca_angle_err = VelVec.Angle().GetValue();
     if(orca_angle_err >= M_PI) { orca_angle_err -= 2 * M_PI; }
     if(orca_angle_err < -M_PI) { orca_angle_err += 2 * M_PI; }
-//    std::cout << "orca_angle_err: " << orca_angle_err << std::endl;
+    if (abs(orca_angle_err) > M_PI_2) { orca_angle_err = VelVec.Rotate(CRadians(M_PI)).Angle().GetValue(); inverse_flag = true;}
+    if(orca_angle_err >= M_PI) { orca_angle_err -= 2 * M_PI; }
+    if(orca_angle_err < -M_PI) { orca_angle_err += 2 * M_PI; }
+//    if (id == 0) { std::cout << "kp" << id << " angle err" << orca_angle_err << std::endl; }
 
     double vel_eff = 0.; double omega_eff = 0.;
     double tolerance = wasRotating ? rotatingRotationTolerance : drivingRotationTolerance;
@@ -231,16 +275,20 @@ void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
     } else {
         omega_eff = theta_ctrl.computeEffort(orca_angle_err);
         vel_eff = vel_ctrl.computeEffort(orca_dist_err);
-        if (abs(orca_angle_err) > M_PI_2) { omega_eff *= -1.; vel_eff *= -1.; }
+        if (inverse_flag) { vel_eff *= -1.; }
+//        vel_eff *= -1.;
         wasRotating = false;
     }
+//    std::cout << "v_eff: " << v_eff << " omega_eff:" << omega_eff << std::endl;
     ApplyTwist(vel_eff, omega_eff);
 }
 
 void CKheperaIVORCAFailureMQP::ApplyTwist(double v_eff, double omega_eff) {
-    double left_wheel_vel = v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    double right_wheel_vel = v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff;
-    m_pcWheelsA->SetLinearVelocity(left_wheel_vel * 100., right_wheel_vel * 100.);
+//    std::cout << "v_eff: " << v_eff << " omega_eff:" << omega_eff << std::endl;
+    double left_wheel_vel = 100. * (v_eff - (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff);
+    double right_wheel_vel = 100. * (v_eff + (KHEPERAIV_HALF_WHEEL_DISTANCE) * omega_eff);
+    m_pcWheelsA->SetLinearVelocity(left_wheel_vel, right_wheel_vel);
+//    std::cout << "l: " << left_wheel_vel << " r:" << right_wheel_vel << std::endl;
 }
 
 

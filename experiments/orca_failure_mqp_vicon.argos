@@ -1,0 +1,142 @@
+<?xml version="1.0" ?>
+<argos-configuration>
+
+  <framework>
+    <system threads="4" />
+    <experiment length="0"
+                ticks_per_second="10"
+                random_seed="124" />
+  </framework>
+
+  <!-- *************** -->
+  <!-- * Controllers * -->
+  <!-- *************** -->
+  <controllers>
+
+    <kheperaiv_orca_failure_mqp_controller id="kheperaiv_orca_failure_mqp_controller" library="build_vicon/controllers/kheperaiv_orca_failure_mqp/libkheperaiv_orca_failure_mqp">
+
+      <!-- Actuators -->
+      <actuators>
+        <differential_steering implementation="default"/>
+        <range_and_bearing implementation="default" />
+        <leds implementation="default" medium="leds" />
+      </actuators>
+
+      <!-- Sensors -->
+      <sensors>
+        <positioning implementation="default" />
+        <range_and_bearing implementation="medium" medium="rab"/>
+        <differential_steering implementation="default"/>
+      </sensors>
+
+      <!-- Params -->
+      <params alpha="7.5" delta="0.1" velocity="5" />
+    </kheperaiv_orca_failure_mqp_controller>
+
+  </controllers>
+
+
+  <arena size="5, 5, 1" center="0,0,0.5">
+
+    <!-- Place four boxes in a square to delimit the arena -->
+    <box id="wall_left" size="3,0.1,0.5" movable="false">
+      <body position="0,1.5,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_right" size="2.5,0.1,0.5" movable="false">
+      <body position="0.25,-1.5,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_upper" size="0.1,3,0.5" movable="false">
+      <body position="1.5,0,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_bottom" size="0.1,2.5,0.5" movable="false">
+      <body position="-1.5,0.25,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_depot_left" size="0.5,0.1,0.5" movable="false">
+      <body position="-1.75,-1.,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_depot_right" size="1.,0.1,0.5" movable="false">
+      <body position="-1.5,-2.,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_depot_upper" size="0.1,0.5,0.5" movable="false">
+      <body position="-1,-1.75,0" orientation="0,0,0" />
+    </box>
+    <box id="wall_depot_bottom" size="0.1,1.,0.5" movable="false">
+      <body position="-2,-1.5.,0" orientation="0,0,0" />
+    </box>
+
+  </arena>
+
+  <!-- ******************* -->
+  <!-- * Physics engines * -->
+  <!-- ******************* -->
+  <physics_engines>
+    <!--  Sim  -->
+    <dynamics2d id="dyn2d" />
+    <!--  Real  -->
+<!--      <tracking>-->
+<!--        <updaters>-->
+<!--          <vicon_updater/>-->
+<!--        </updaters>-->
+<!--        <assigners>-->
+<!--          <Khepera default="kheperaiv_orca_failure_mqp_controller"/>-->
+<!--        </assigners>-->
+<!--      </tracking>-->
+  </physics_engines>
+
+  <!-- ********* -->
+  <!-- * Media * -->
+  <!-- ********* -->
+  <media>
+    <range_and_bearing id="rab" check_occlusions="false" />
+    <led id="leds" />
+  </media>
+
+  <!-- ****************** -->
+  <!-- * Visualization * -->
+  <!-- ****************** -->
+  <visualization>
+    <qt-opengl>
+      <user_functions library="build_vicon/loop_functions/kheperaiv_orca_failure_mqp_loop/libkheperaiv_orca_failure_mqp_loop"
+                      label="qtuser_functions" />
+      <camera>
+        <placements>
+          <placement index="0" position="0,0,9" look_at="0,0,0" up="1,0,0" lens_focal_length="50" />
+        </placements>
+      </camera>
+    </qt-opengl>
+  </visualization>
+
+  <loop_functions label="MasterLoopFunctions">
+    <sub_loop_function library="build_vicon/loop_functions/kheperaiv_orca_failure_mqp_loop/libkheperaiv_orca_failure_mqp_loop" label="kheperaiv_orca_failure_mqp_loop">
+
+      <!--
+      ** All required parameters to formulate and solve the problem **
+      "host": the host address of the problem solver server,
+      "k": maximum number of robots to use,
+      "n_a": number of nodes to have on an axis,
+      "fcr": fuel-capacity-ratio (the fuel capacity of the robots relative to the roundtrip cost between the furthest node and the depot),
+      "rp": redundancy parameter (the solution will be able to tolerate rp-1 number of robots before a recalculation is needed ),
+      "ssd": square-side-distance (length of the side of the square arena in meters),
+      "mode": "m" for MILP-based solver, "h1" for Yaşar's heuristic, "h2" for Cam's heuristic,
+      "fr": failure probability rate (the probability of failure of a robot for each time step/tick),
+      "frt": failure recovery time (the time it takes for a robot to teleport to depot in seconds),
+      -->
+      <problem_params host="http://Yasars-MacBook-Pro.local:8000"
+                      k="8"
+                      n_a="8"
+                      fcr="1.5"
+                      rp="3"
+                      ssd="3"
+                      mode="h1"
+                      fr="0.00"
+                      frt="50" />
+
+      <arena_params initial-robot-spacing="0.25" />
+
+      <position_logging_params output-folder="./output/" />
+    </sub_loop_function>
+
+    <sub_loop_function label="BaseNetworking" />
+  </loop_functions>
+
+</argos-configuration>
