@@ -85,6 +85,7 @@ public:
         RVO::Vector2 GetCurrVel(){ return ARGOStoRVOVec(curr_vel); }
     };
 //    std::vector<NORCAData> nORCADatas = std::vector<NORCAData>();
+    unsigned int ticks=0;
 
     CVector2 orcaVec;
     std::vector<std::vector<RVO::Vector2>> obstacles = std::vector<std::vector<RVO::Vector2>>();
@@ -98,6 +99,8 @@ public:
 
     double fr = 0.;
     unsigned int since_failed_counter = 0;
+
+    bool robot_failed = false;
 
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
@@ -124,6 +127,7 @@ private:
     RVO::RVOSimulator *simulator = new RVO::RVOSimulator();
 
     CRandom::CRNG *m_pcRNG;
+
 
     /* Wheel speed. */
     Real maxRobotVelocity;

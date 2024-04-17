@@ -44,6 +44,8 @@ public:
     unsigned long num_of_robots_per_side;
     double frt;
 
+    bool robot_failed = false;
+    
     string position_logging_output_folder;
     unsigned int ticks=0;
 

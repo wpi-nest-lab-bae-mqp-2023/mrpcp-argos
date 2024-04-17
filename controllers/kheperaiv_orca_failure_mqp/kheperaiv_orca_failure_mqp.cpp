@@ -121,15 +121,20 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             if (!is_turn_to_startup_depot) { return; }
             DriveORCA();
 
+            //std::cout << std::to_string(ticks * (10. * physics_engines[0]->GetPhysicsClockTick())) << std::endl;
             // Fail with a set probability rate (make sure the robot isn't in the depot)
-            if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
+            //if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
+            std::cout << id << std::endl;
+            if (did_leave_from_startup_depot && ticks > 600 && id == 0 && robot_failed == false) {
                 std::cout << "kp" << id << " failed!" << std::endl;
                 since_failed_counter = 0;
+                robot_failed = true;
                 m_eState = STATE_FAILURE;
             }
             break;
         }
         case STATE_FAILURE: {
+            std::cout << "kp" << id << " failed!" << std::endl;
             ApplyTwist(0., 0.);
             orcaVec.SetX(0.); orcaVec.SetY(0.);
             goal_pos = curr_pos;

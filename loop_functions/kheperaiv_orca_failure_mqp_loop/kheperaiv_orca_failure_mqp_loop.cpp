@@ -112,6 +112,10 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         robot_posn[ki] = cPos;
         fuel_levels[ki] = 1;
         ki += 1;
+
+        //if(cController.since_failed_counter == 1){
+        //  robot_failed = true;
+        //}
     }
 
     //std::cout << std::to_string(robot_posn) << std::endl;
@@ -137,13 +141,17 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
 
+        //if(robot_failed == true){
+        //  cController.robot_failed = true;
+        //}
+
         if(cController.since_failed_counter == 5){
           mqp_http_client::recalculate(&path_arr, host, k, n_a, fcr, rp, ssd, mode, curr_fuel_levels, curr_robots_pos);
           for (int robot_id = 0; robot_id < cKheperaIVs.size(); ++robot_id) {
             cController.SetPath(path_arr[robot_id]);
           }
         }
-        else if (cController.since_failed_counter > frt / (10. * GetSimulator().GetPhysicsEngines()[0]->GetPhysicsClockTick())) {
+        else if (cController.since_failed_counter >= 605) {
             // Teleport robot, but also delay if can't place to the start location
             bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
             if (!success) { continue; }
@@ -195,8 +203,8 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
     if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
 
-    double sr = ssd / (sqrt(2.) * n_a);  // surveillance radius
-    ssd -= sqrt(2.) * sr; // Override ssd to put padding
+    //double sr = ssd / (sqrt(2.) * n_a);  // surveillance radius
+    //ssd -= sqrt(2.) * sr; // Override ssd to put padding
 
     std::cout << "Problem Specification Parameters:" << std::endl;
     std::cout << "\thost (problem solver server host): " << host << std::endl;
