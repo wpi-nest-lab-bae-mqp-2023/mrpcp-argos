@@ -195,6 +195,9 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
     if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
 
+    double sr = ssd / (sqrt(2.) * n_a);  // surveillance radius
+    ssd -= sqrt(2.) * sr; // Override ssd to put padding
+
     std::cout << "Problem Specification Parameters:" << std::endl;
     std::cout << "\thost (problem solver server host): " << host << std::endl;
     std::cout << "\tk (number of robots): " << k << std::endl;

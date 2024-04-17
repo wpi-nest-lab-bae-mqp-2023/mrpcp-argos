@@ -29,15 +29,15 @@ public:
                       std::string mode);
                       
     static bool recalculate(std::vector<std::vector<std::vector<std::vector<double>>>> *path_arr,
-                                std::string host,
-                                int k,
-                                double n_a,
-                                double fcr,
-                                double rp,
-                                double ssd,
-                                std::string mode,
-                                std::string curr_fuel_levels,
-                                std::string curr_robots_pos);
+                            std::string host,
+                            unsigned int k,
+                            unsigned int n_a,
+                            double fcr,
+                            unsigned int rp,
+                            double ssd,
+                            std::string mode,
+                            std::string curr_fuel_levels,
+                            std::string curr_robots_pos);
 
     static void printPaths(std::vector<std::vector<std::vector<std::vector<double>>>> path_arr);
     static void printPath(std::vector<std::vector<std::vector<double>>> path_arr);
