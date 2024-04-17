@@ -10,6 +10,7 @@ target_link_libraries(kheperaiv_orca_failure_mqp_loop
         argos3plugin_simulator_kheperaiv
         argos3plugin_simulator_genericrobot
         argos3plugin_simulator_qtopengl
+        argos3plugin_simulator_master_loop_functions
         ${CURL_LIBRARIES}
         nlohmann_json::nlohmann_json
 )
