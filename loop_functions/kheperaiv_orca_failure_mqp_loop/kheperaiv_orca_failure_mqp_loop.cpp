@@ -25,7 +25,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
     depot = path_arr[0][0][0];
     delta = 0.25; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
-    double fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
+    fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
     frt = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "frt", frt, frt);
     if (frt < 0.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (frt<0): Select frt >= 0."); }
@@ -196,8 +196,8 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "mode", mode, mode);
     if (!(mode == "m" || mode == "h1" || mode == "h2")) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (mode!=m,h1,h2): Select mode as either 'm', 'h1', or 'h2'"); }
 
-    //double sr = ssd / (sqrt(2.) * n_a);  // surveillance radius
-    //ssd -= sqrt(2.) * sr; // Override ssd to put padding
+    double sr = ssd / (sqrt(2.) * n_a);  // surveillance radius
+    ssd -= sqrt(2.) * sr; // Override ssd to put padding
 
     std::cout << "Problem Specification Parameters:" << std::endl;
     std::cout << "\thost (problem solver server host): " << host << std::endl;
