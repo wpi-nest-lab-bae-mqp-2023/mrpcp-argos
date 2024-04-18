@@ -7,10 +7,10 @@
 CKheperaIVORCAFailureMQP::CKheperaIVORCAFailureMQP() :
         maxRobotVelocity(0.2),
         maxRobotOmega(M_PI / 2.),
-        vel_kp(1.),
+        vel_kp(0.4),
         vel_ki(0.),
         vel_kd(0.),
-        theta_kp(2.),
+        theta_kp(1.),
         theta_ki(0.),
         theta_kd(0.),
         vel_ctrl(vel_kp, vel_ki, vel_kd, -maxRobotVelocity, maxRobotVelocity, maxRobotVelocity/4.),
