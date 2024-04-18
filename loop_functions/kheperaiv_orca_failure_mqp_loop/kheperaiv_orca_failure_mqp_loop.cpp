@@ -72,6 +72,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
     }
 
     // If a failure happens, respawn robots after some time period
+    bool force_recalc = false;
     unsigned int num_of_failed_robots = cKheperaIVs.size();
     std::vector<unsigned int> healthy_robots = std::vector<unsigned int>();
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
@@ -90,6 +91,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
                 if (!success) { continue; }
             }
             cController.Reset();
+            if (is_prev_path_recalc) { force_recalc = true; }
             std::cout << "kp" << ki << " respawned!" << std::endl;
         }
     }
@@ -106,7 +108,7 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         is_prev_path_recalc = false;
     }
     // Recalculate paths if enough robots fail
-    else if (healthy_robots != prev_healthy_robots && num_of_failed_robots >= rp) {
+    else if (force_recalc || (healthy_robots != prev_healthy_robots && num_of_failed_robots >= rp)) {
         // Construct the lists of healthy robots that can execute the recalculated paths
         std::string curr_robots_pos = "";
         std::string curr_fuel_levels = "";
@@ -123,12 +125,11 @@ void CKheperaIVORCAMQPLoop::PreStep() {
         curr_robots_pos = "[" + curr_robots_pos.substr(0, curr_robots_pos.size()-1) + "]";
         curr_fuel_levels = "[" + curr_fuel_levels.substr(0, curr_fuel_levels.size()-1) + "]";
 
-        mqp_http_client::recalculate(&most_recent_path_arr, host, k-num_of_failed_robots, n_a, fcr, rp, ssd, mode, curr_fuel_levels, curr_robots_pos);
+        mqp_http_client::recalculate(&most_recent_path_arr, host, k-num_of_failed_robots, n_a, fcr, 1, ssd, mode, curr_fuel_levels, curr_robots_pos);
         unsigned int path_counter = 0;
         for (auto cKheperaIV : cKheperaIVs) {
             auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
             if (cController.since_failed_counter) { continue; }
-            std::cout << "setting the path of " << cController.id << " path_counter" << path_counter << std::endl;
             bool is_turn_to_startup_depot = cController.is_turn_to_startup_depot;
             bool did_leave_from_startup_depot = cController.did_leave_from_startup_depot;
             cController.SetPath(most_recent_path_arr[path_counter]);

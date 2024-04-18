@@ -43,15 +43,8 @@ void CKheperaIVORCAFailureMQP::Reset(){
     m_pcRNG->SetSeed(id);
     ResetSim();
 
-    if(path_arr.empty()){ return; }
     m_eState = STATE_DRIVE;
     m_eState_prev = m_eState;
-    subtour_idx = 0;
-    node_idx = 0;
-    goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
-    goal_pos.SetY(path_arr[subtour_idx][node_idx][1]);
-    depot_pos.SetX(path_arr[0][0][0]);
-    depot_pos.SetY(path_arr[0][0][1]);
 
     vel_ctrl.reset();
     theta_ctrl.reset();
@@ -65,6 +58,14 @@ void CKheperaIVORCAFailureMQP::Reset(){
     deadlock_detection_filter.reset();
     since_deadlock_counter = 0;
     since_non_deadlock_counter = 0;
+
+    if(path_arr.empty()){ return; }
+    subtour_idx = 0;
+    node_idx = 0;
+    goal_pos.SetX(path_arr[subtour_idx][node_idx][0]);
+    goal_pos.SetY(path_arr[subtour_idx][node_idx][1]);
+    depot_pos.SetX(path_arr[0][0][0]);
+    depot_pos.SetY(path_arr[0][0][1]);
 }
 
 void CKheperaIVORCAFailureMQP::ResetSim() {
@@ -109,8 +110,18 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
 
     if(path_arr.empty()){ ApplyTwist(0., 0.); return; }
 
+    // Failure checking
+    if (m_eState == STATE_DRIVE || m_eState == STATE_DEADLOCK) {
+        // Fail with a set probability rate (make sure the robot isn't in the depot)
+        if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
+            std::cout << "kp" << id << " failed!" << std::endl;
+            since_failed_counter = 0;
+            m_eState = STATE_FAILURE;
+        }
+    }
+
     // Deadlock detection
-    if (since_non_deadlock_counter > 5. * orcaTimeHorizon * 10. && did_leave_from_startup_depot && (m_eState == STATE_DEADLOCK || (deadlock_detection_filter.isFilledOnce && deadlock_detection_filter.getStdDev() < 0.01))) {
+    if (m_eState != STATE_FAILURE && since_non_deadlock_counter > 5. * orcaTimeHorizon * 10. && did_leave_from_startup_depot && (m_eState == STATE_DEADLOCK || (deadlock_detection_filter.isFilledOnce && deadlock_detection_filter.getStdDev() < 0.01))) {
         if (m_eState != STATE_DEADLOCK) {
             m_eState_prev = m_eState;
             m_eState = STATE_DEADLOCK;
@@ -126,16 +137,6 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
     } else {
         since_deadlock_counter = 0;
         since_non_deadlock_counter += 1;
-    }
-
-    // Failure checking
-    if (m_eState == STATE_DRIVE || m_eState == STATE_DEADLOCK) {
-        // Fail with a set probability rate (make sure the robot isn't in the depot)
-        if (did_leave_from_startup_depot && m_pcRNG->Uniform(CRange(0., 1.)) < fr) {
-            std::cout << "kp" << id << " failed!" << std::endl;
-            since_failed_counter = 0;
-            m_eState = STATE_FAILURE;
-        }
     }
 
     // Execute on the state machine only if there is a path for robots to follow.
