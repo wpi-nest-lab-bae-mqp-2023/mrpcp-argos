@@ -44,7 +44,7 @@ void CQTUserFunctions::DrawInWorld() {
                       goal_robot_pos + CVector3(0., 0., 0.02)),
                 CColor(0xFF, 0xA6, 0xFE, 250), 3);
     }
-    drawPath(m_cKheperaIVORCALoop.path_arr);
+    drawPath(m_cKheperaIVORCALoop.most_recent_path_arr);
 }
 
 void CQTUserFunctions::drawPath(std::vector<std::vector<std::vector<std::vector<double>>>> path_arr) {

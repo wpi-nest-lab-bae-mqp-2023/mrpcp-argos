@@ -20,10 +20,10 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
     auto m_pcRNG = CRandom::CreateRNG("argos");
 
 //    num_of_robots = 3;
-    num_of_robots = path_arr.size();
+    num_of_robots = original_path_arr.size();
     num_of_robots_per_side = std::ceil(std::sqrt((double)num_of_robots));
 
-    depot = path_arr[0][0][0];
+    depot = original_path_arr[0][0][0];
     delta = 0.25; GetNodeAttributeOrDefault(GetNode(t_tree, "arena_params"), "initial-robot-spacing", delta, delta);
     fr = 0.; GetNodeAttributeOrDefault(GetNode(t_tree, "problem_params"), "fr", fr, fr);
     if (fr > 1.) { THROW_ARGOSEXCEPTION("Incorrect/Incomplete Problem Parameter Specification (fr>1): Select 0. >= fr >= 1."); }
@@ -58,11 +58,7 @@ void CKheperaIVORCAMQPLoop::Init(TConfigurationNode& t_tree) {
 
 void CKheperaIVORCAMQPLoop::PreStep() {
     updateKheperaIVs();
-    CVector2 robot_posn[num_of_robots];
-    float fuel_levels[num_of_robots];
-
     // Start robots in order at start
-    int ki = 0;
     unsigned int depot_turn_robot_id = 0;
     for (auto cKheperaIV : cKheperaIVs) {
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
@@ -73,63 +69,76 @@ void CKheperaIVORCAMQPLoop::PreStep() {
 //            std::cout << "id" << cController.id << " is done, letting next robot go..." << std::endl;
             depot_turn_robot_id += 1;
         }
-
-
-        CVector2 cPos;
-        cPos.Set(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(),
-                 cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
-
-        robot_posn[ki] = cPos;
-        fuel_levels[ki] = 1;
-        ki += 1;
-
-        //if(cController.since_failed_counter == 1){
-        //  robot_failed = true;
-        //}
     }
-
-    //std::cout << std::to_string(robot_posn) << std::endl;
-    std::string curr_robots_pos = "";
-    std::string curr_fuel_levels = "";
-
-    for(int x = 0; x<cKheperaIVs.size(); ++x){
-      curr_robots_pos = curr_robots_pos + "[" + std::to_string(robot_posn[x].GetX()) + ", " + std::to_string(robot_posn[x].GetX()) +"],";
-    }
-
-    for(int x = 0; x<cKheperaIVs.size(); ++x){
-      curr_fuel_levels = curr_fuel_levels + std::to_string(fuel_levels[x]) +",";
-    }
-
-    curr_robots_pos = "[" + curr_robots_pos.substr(0, curr_robots_pos.size()-1) + "]";
-    curr_fuel_levels = "[" + curr_fuel_levels.substr(0, curr_fuel_levels.size()-1) + "]";
-
 
     // If a failure happens, respawn robots after some time period
+    unsigned int num_of_failed_robots = cKheperaIVs.size();
+    std::vector<unsigned int> healthy_robots = std::vector<unsigned int>();
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
         int i = floor(ki / num_of_robots_per_side);
         int j = ki % num_of_robots_per_side;
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
-
-        //if(robot_failed == true){
-        //  cController.robot_failed = true;
-        //}
-
-        if(cController.since_failed_counter == 5){
-          mqp_http_client::recalculate(&path_arr, host, k, n_a, fcr, rp, ssd, mode, curr_fuel_levels, curr_robots_pos);
-          for (int robot_id = 0; robot_id < cKheperaIVs.size(); ++robot_id) {
-            cController.SetPath(path_arr[robot_id]);
-          }
+        if (cController.since_failed_counter == 0) {
+            num_of_failed_robots -= 1;
+            healthy_robots.push_back(ki);
         }
-        else if (cController.since_failed_counter >= 605) {
-            // Teleport robot, but also delay if can't place to the start location
-            bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
-            if (!success) { continue; }
+        if (cController.since_failed_counter >= frt * 10) {
+            if (GetSimulator().GetPhysicsEngines()[0]->GetId() == "dyn2d") {
+                // Teleport robot, but also delay if can't place to the start location
+                bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
+                if (!success) { continue; }
+            }
             cController.Reset();
-
             std::cout << "kp" << ki << " respawned!" << std::endl;
         }
     }
+
+    if (healthy_robots != prev_healthy_robots && healthy_robots.size() == k && is_prev_path_recalc) {
+        most_recent_path_arr = original_path_arr;
+        unsigned int path_counter = 0;
+        for (auto cKheperaIV : cKheperaIVs) {
+            auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+            if (cController.since_failed_counter) { continue; }
+            cController.SetPath(most_recent_path_arr[path_counter]);
+            path_counter += 1;
+        }
+        is_prev_path_recalc = false;
+    }
+    // Recalculate paths if enough robots fail
+    else if (healthy_robots != prev_healthy_robots && num_of_failed_robots >= rp) {
+        // Construct the lists of healthy robots that can execute the recalculated paths
+        std::string curr_robots_pos = "";
+        std::string curr_fuel_levels = "";
+        for (auto cKheperaIV : cKheperaIVs) {
+            auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+            if (cController.since_failed_counter) { continue; }
+            CVector2 curr_robot_pos = CVector2(cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetX(), cKheperaIV->GetEmbodiedEntity().GetOriginAnchor().Position.GetY());
+            if (curr_robot_pos.GetX() < depot[0] && curr_robot_pos.GetY() < depot[1]) {
+                curr_robot_pos.Set(depot[0], depot[1]);
+            }
+            curr_robots_pos = curr_robots_pos + "[" + std::to_string(curr_robot_pos.GetX()) + ", " + std::to_string(curr_robot_pos.GetY()) +"],";
+            curr_fuel_levels = curr_fuel_levels + std::to_string(1.) +",";
+        }
+        curr_robots_pos = "[" + curr_robots_pos.substr(0, curr_robots_pos.size()-1) + "]";
+        curr_fuel_levels = "[" + curr_fuel_levels.substr(0, curr_fuel_levels.size()-1) + "]";
+
+        mqp_http_client::recalculate(&most_recent_path_arr, host, k-num_of_failed_robots, n_a, fcr, rp, ssd, mode, curr_fuel_levels, curr_robots_pos);
+        unsigned int path_counter = 0;
+        for (auto cKheperaIV : cKheperaIVs) {
+            auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+            if (cController.since_failed_counter) { continue; }
+            std::cout << "setting the path of " << cController.id << " path_counter" << path_counter << std::endl;
+            bool is_turn_to_startup_depot = cController.is_turn_to_startup_depot;
+            bool did_leave_from_startup_depot = cController.did_leave_from_startup_depot;
+            cController.SetPath(most_recent_path_arr[path_counter]);
+            cController.is_turn_to_startup_depot = is_turn_to_startup_depot;
+            cController.did_leave_from_startup_depot = did_leave_from_startup_depot;
+            path_counter += 1;
+        }
+        is_prev_path_recalc = true;
+    }
+    prev_healthy_robots = healthy_robots;
 
     // Log positions to an output file
     pos_logger->write_to_logs(cKheperaIVs);
@@ -169,7 +178,7 @@ void CKheperaIVORCAMQPLoop::updateKheperaIVs() {
         cController.fr = fr;
         cController.obstacles = obstacles;
         cController.rab_range = rab_range;
-        cController.SetPath(path_arr[robot_id]);
+        cController.SetPath(most_recent_path_arr[robot_id]);
         cKheperaIVs.insert(cKheperaIVs.begin() + robot_id, cKheperaIV);
     }
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
@@ -208,9 +217,9 @@ void CKheperaIVORCAMQPLoop::RequestPath(TConfigurationNode& t_tree) {
     std::cout << "\tssd (square-side-distance in meters): " << ssd << std::endl;
     std::cout << "Waiting on a solution..." << std::endl;
 
-    mqp_http_client::solve(&path_arr, host, k, n_a, fcr, rp, ssd, mode);
-//    mqp_http_client::printPaths(path_arr);
-
+    mqp_http_client::solve(&original_path_arr, host, k, n_a, fcr, rp, ssd, mode);
+//    mqp_http_client::printPaths(original_path_arr);
+    most_recent_path_arr = original_path_arr;
 }
 
 

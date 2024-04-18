@@ -121,15 +121,15 @@
       "fr": failure probability rate (the probability of failure of a robot for each time step/tick),
       "frt": failure recovery time (the time it takes for a robot to teleport to depot in seconds),
       -->
-      <problem_params host="http://127.0.0.1:5000"
+      <problem_params host="http://127.0.0.1:8000"
                       k="8"
                       n_a="8"
                       fcr="1.5"
                       rp="3"
                       ssd="3"
                       mode="h1"
-                      fr="0.0"
-                      frt="50" />
+                      fr="0.0001"
+                      frt="100" />
 
       <arena_params initial-robot-spacing="0.25" />
 

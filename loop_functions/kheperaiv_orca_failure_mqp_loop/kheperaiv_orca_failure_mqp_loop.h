@@ -36,7 +36,8 @@ public:
     void CalculateObstacles();
     void updateKheperaIVs();
 
-    std::vector<std::vector<std::vector<std::vector<double>>>> path_arr;
+    std::vector<std::vector<std::vector<std::vector<double>>>> original_path_arr;
+    std::vector<std::vector<std::vector<std::vector<double>>>> most_recent_path_arr;
     std::vector<std::vector<RVO::Vector2>> obstacles;
     std::vector<CKheperaIVEntity*> cKheperaIVs;
     std::vector<double> depot;
@@ -58,6 +59,8 @@ public:
     position_logger* pos_logger;
 
     double rab_range = 1.0;
+    std::vector<unsigned int> prev_healthy_robots = std::vector<unsigned int>();
+    bool is_prev_path_recalc = false;
 
 };
 

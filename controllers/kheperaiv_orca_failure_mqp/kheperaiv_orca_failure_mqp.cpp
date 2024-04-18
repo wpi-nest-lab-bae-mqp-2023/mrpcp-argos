@@ -107,7 +107,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
     if (since_failed_counter != 0 && ((int)(since_failed_counter / 10) % 2) == 0) { m_pcLEDs->SetAllColors(CColor::RED); }
     else { m_pcLEDs->SetAllColors(CColor::BLACK); }
 
-    if(path_arr.empty()){ return; }
+    if(path_arr.empty()){ ApplyTwist(0., 0.); return; }
 
     // Deadlock detection
     if (since_non_deadlock_counter > 5. * orcaTimeHorizon * 10. && did_leave_from_startup_depot && (m_eState == STATE_DEADLOCK || (deadlock_detection_filter.isFilledOnce && deadlock_detection_filter.getStdDev() < 0.01))) {
@@ -156,7 +156,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             break;
         }
         case STATE_DRIVE: {
-            if (!is_turn_to_startup_depot) { break; }
+            if (!is_turn_to_startup_depot) { ApplyTwist(0., 0.); break; }
             DriveORCA(goal_pos);
             break;
         }
@@ -165,7 +165,6 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             break;
         }
         case STATE_FAILURE: {
-            std::cout << "kp" << id << " failed!" << std::endl;
             ApplyTwist(0., 0.);
             orcaVec.Set(0., 0.);
             goal_pos = curr_pos;
