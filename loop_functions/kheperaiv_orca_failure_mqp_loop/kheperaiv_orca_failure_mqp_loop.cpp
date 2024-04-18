@@ -227,10 +227,10 @@ void CKheperaIVORCAMQPLoop::CalculateObstacles() {
 //        std::cout << "Box: " << "MinCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner << " -  MaxCorner: " << cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner << std::endl;
 
         auto obstacle = std::vector<RVO::Vector2>();
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY());
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
-        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX(), (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY());
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX() + KHEPERAIV_BASE_RADIUS / 2., (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY() + KHEPERAIV_BASE_RADIUS / 2.);
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX() - KHEPERAIV_BASE_RADIUS / 2., (float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetY() + KHEPERAIV_BASE_RADIUS / 2.);
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetX() - KHEPERAIV_BASE_RADIUS / 2., (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY() - KHEPERAIV_BASE_RADIUS / 2.);
+        obstacle.emplace_back((float)cBox.GetEmbodiedEntity().GetBoundingBox().MaxCorner.GetX() + KHEPERAIV_BASE_RADIUS / 2., (float)cBox.GetEmbodiedEntity().GetBoundingBox().MinCorner.GetY() - KHEPERAIV_BASE_RADIUS / 2.);
         obstacles.push_back(obstacle);
     }
 }
