@@ -110,18 +110,19 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
     if(path_arr.empty()){ return; }
 
     // Deadlock detection
-    if (since_non_deadlock_counter > 3. * orcaTimeHorizon * 10. && did_leave_from_startup_depot && (m_eState == STATE_DEADLOCK || deadlock_detection_filter.getStdDev() < 0.01)) {
+    if (since_non_deadlock_counter > 5. * orcaTimeHorizon * 10. && did_leave_from_startup_depot && (m_eState == STATE_DEADLOCK || (deadlock_detection_filter.isFilledOnce && deadlock_detection_filter.getStdDev() < 0.01))) {
         if (m_eState != STATE_DEADLOCK) {
             m_eState_prev = m_eState;
             m_eState = STATE_DEADLOCK;
             std::cout << "kp" << id << " entered deadlock mode!" << std::endl;
+        } else {
+            if (since_deadlock_counter > 5. * orcaTimeHorizon * 10.) {
+                m_eState = m_eState_prev;
+                since_non_deadlock_counter = 0;
+                std::cout << "kp" << id << " is back in drive mode!" << std::endl;
+            }
         }
         since_deadlock_counter += 1;
-        if (since_deadlock_counter > 3. * orcaTimeHorizon * 10.) {
-            m_eState = m_eState_prev;
-            since_non_deadlock_counter = 0;
-            std::cout << "kp" << id << " is back in drive mode!" << std::endl;
-        }
     } else {
         since_deadlock_counter = 0;
         since_non_deadlock_counter += 1;
@@ -160,7 +161,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             break;
         }
         case STATE_DEADLOCK: {
-            DriveORCA(curr_pos + (orcaNeighborsCentroid - curr_pos).Rotate(-yaw).Normalize() * maxRobotVelocity * orcaTimeHorizon);
+            DriveORCA(curr_pos + (orcaNeighborsCentroid - curr_pos).Rotate(-yaw).Normalize() * maxRobotVelocity * orcaTimeHorizon * 5.);
             break;
         }
         case STATE_FAILURE: {
@@ -248,9 +249,9 @@ void CKheperaIVORCAFailureMQP::DriveORCA(CVector2 orca_goal_pos) {
     // If not, apply ORCA
     ApplyORCA(orcaVec);
 //    std::cout << "Number of Neighbors: " << tPackets.size() << std::endl;
-
     // For deadlock detection
     deadlock_detection_filter.addDatum((goal_pos - curr_pos).Length());
+
 }
 
 void CKheperaIVORCAFailureMQP::ApplyORCA(CVector2 VelVec) {
