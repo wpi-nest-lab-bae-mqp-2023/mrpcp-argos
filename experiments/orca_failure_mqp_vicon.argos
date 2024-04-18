@@ -36,7 +36,7 @@
   </controllers>
 
 
-  <arena size="5, 5, 1" center="0,0,0.5">
+  <arena size="5, 5, 10" center="0,0,0">
 
     <!-- Place four boxes in a square to delimit the arena -->
     <box id="wall_left" size="3,0.1,0.5" movable="false">
@@ -71,16 +71,16 @@
   <!-- ******************* -->
   <physics_engines>
     <!--  Sim  -->
-    <dynamics2d id="dyn2d" />
+<!--    <dynamics2d id="dyn2d" />-->
     <!--  Real  -->
-<!--      <tracking>-->
-<!--        <updaters>-->
-<!--          <vicon_updater/>-->
-<!--        </updaters>-->
-<!--        <assigners>-->
-<!--          <Khepera default="kheperaiv_orca_failure_mqp_controller"/>-->
-<!--        </assigners>-->
-<!--      </tracking>-->
+      <tracking>
+        <updaters>
+          <vicon_updater/>
+        </updaters>
+        <assigners>
+          <Khepera default="kheperaiv_orca_failure_mqp_controller"/>
+        </assigners>
+      </tracking>
   </physics_engines>
 
   <!-- ********* -->
