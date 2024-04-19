@@ -105,6 +105,18 @@ public:
 
     bool robot_failed = false;
 
+    bool did_relocate = true;
+
+    /* The three possible states in which the controller can be */
+    enum EState {
+        STATE_NEW_POINT = 0,
+        STATE_DRIVE,
+        STATE_DEADLOCK,
+        STATE_FAILURE,
+    };
+    EState m_eState;
+    EState m_eState_prev;
+
 private:
     void UpdateVelocityVector(CCI_DifferentialSteeringSensor::SReading pcWheelsSReading);
     void BroadcastORCA();
@@ -150,16 +162,6 @@ private:
     AveragingFilter curr_vel_x_filter;
     AveragingFilter curr_vel_y_filter;
     AveragingFilter deadlock_detection_filter;
-
-    /* The three possible states in which the controller can be */
-    enum EState {
-        STATE_NEW_POINT = 0,
-        STATE_DRIVE,
-        STATE_DEADLOCK,
-        STATE_FAILURE,
-    };
-    EState m_eState;
-    EState m_eState_prev;
 
     unsigned long subtour_idx;
     unsigned long node_idx;

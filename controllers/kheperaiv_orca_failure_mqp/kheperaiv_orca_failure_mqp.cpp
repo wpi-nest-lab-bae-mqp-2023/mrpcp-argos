@@ -59,6 +59,8 @@ void CKheperaIVORCAFailureMQP::Reset(){
     since_deadlock_counter = 0;
     since_non_deadlock_counter = 0;
 
+    did_relocate = true;
+
     if(path_arr.empty()){ return; }
     subtour_idx = 0;
     node_idx = 0;
@@ -117,6 +119,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             std::cout << "kp" << id << " failed!" << std::endl;
             since_failed_counter = 0;
             m_eState = STATE_FAILURE;
+            did_relocate = false;
         }
     }
 
@@ -166,6 +169,7 @@ void CKheperaIVORCAFailureMQP::ControlStep() {
             break;
         }
         case STATE_FAILURE: {
+//            std::cout << "kp" << id << " since_failed_counter:" << since_failed_counter << std::endl;
             ApplyTwist(0., 0.);
             orcaVec.Set(0., 0.);
             goal_pos = curr_pos;

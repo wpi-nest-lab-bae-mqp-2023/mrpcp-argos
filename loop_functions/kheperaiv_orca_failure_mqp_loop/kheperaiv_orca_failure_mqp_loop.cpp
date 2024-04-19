@@ -76,20 +76,32 @@ void CKheperaIVORCAMQPLoop::PreStep() {
     unsigned int num_of_failed_robots = cKheperaIVs.size();
     std::vector<unsigned int> healthy_robots = std::vector<unsigned int>();
     for (int ki = 0; ki < cKheperaIVs.size(); ++ki) {
-        int i = floor(ki / num_of_robots_per_side);
-        int j = ki % num_of_robots_per_side;
         auto cKheperaIV = cKheperaIVs[ki];
         auto &cController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
         if (cController.since_failed_counter == 0) {
             num_of_failed_robots -= 1;
             healthy_robots.push_back(ki);
         }
-        if (cController.since_failed_counter >= frt * 10) {
-            if (GetSimulator().GetPhysicsEngines()[0]->GetId() == "dyn2d") {
-                // Teleport robot, but also delay if can't place to the start location
-                bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
-                if (!success) { continue; }
+        if (cController.since_failed_counter >= 100 && !cController.did_relocate && GetSimulator().GetPhysicsEngines()[0]->GetId() == "dyn2d") {
+            // Teleport robot, but also delay if can't place to the start location
+            bool is_depot_blocked = false;
+            if (lowest_ki == 0) {
+                for (int kii = 0; kii < cKheperaIVs.size(); ++kii) {
+                    auto &tcController = dynamic_cast<CKheperaIVORCAFailureMQP &>(cKheperaIV->GetControllableEntity().GetController());
+                    if (tcController.m_eState == CKheperaIVORCAFailureMQP::EState::STATE_FAILURE && tcController.did_relocate) {
+                        is_depot_blocked = true;
+                    }
+                }
+                if (!is_depot_blocked) {lowest_ki = 1;}
             }
+            if (!is_depot_blocked) {
+                int i = floor(lowest_ki / num_of_robots_per_side);
+                int j = lowest_ki % num_of_robots_per_side;
+                bool success = MoveEntity(cKheperaIV->GetEmbodiedEntity(), CVector3(depot[0] - i * delta - depot_offset, depot[1] - j * delta - depot_offset, 0), CQuaternion().FromEulerAngles(CRadians(0.), CRadians(0.), CRadians(0.)));
+                if (success) { cController.did_relocate = true; lowest_ki = lowest_ki == num_of_robots ? 0 : lowest_ki + 1; }
+            }
+        }
+        if (cController.since_failed_counter >= frt * 10) {
             cController.Reset();
             if (is_prev_path_recalc) { force_recalc = true; }
             std::cout << "kp" << ki << " respawned!" << std::endl;

@@ -61,6 +61,7 @@ public:
     double rab_range = 1.0;
     std::vector<unsigned int> prev_healthy_robots = std::vector<unsigned int>();
     bool is_prev_path_recalc = false;
+    unsigned int lowest_ki = 0;
 
 };
 
