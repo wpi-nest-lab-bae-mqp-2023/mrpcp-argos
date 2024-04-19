@@ -128,8 +128,8 @@
                       rp="3"
                       ssd="3"
                       mode="h1"
-                      fr="0.00"
-                      frt="50" />
+                      fr="0.0001"
+                      frt="300" />
 
       <arena_params initial-robot-spacing="0.25" />
 
